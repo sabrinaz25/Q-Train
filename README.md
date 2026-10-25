@@ -15,7 +15,7 @@ first-class engineering problems and measures everything.
 
 | # | Stage | Status |
 |---|---|---|
-| 1 | Capture + input backends, latency benchmark | 🔁 capture ✅, fast input in progress |
+| 1 | Capture + input backends, verified end-to-end latency benchmark | ✅ |
 | 2 | Screen recognition (menu / run / "Save me?" / popups) + automatic restarts, wrapped as a Gymnasium env | 🔨 in progress |
 | 3 | Scale-out: N emulator instances as one vectorized env; throughput vs. N | ⏳ |
 | 4 | Record human gameplay → behavior-cloning CNN (trained on Colab GPU) | ⏳ |
@@ -26,11 +26,14 @@ first-class engineering problems and measures everything.
 ### Stage 1: latency
 Measured on an HP Spectre 16 (i7-1360P, 16 GB, Windows 11), BlueStacks 5, Android 11 instance.
 
-| Input backend | Round-trip p50 | p95 |
-|---|---|---|
-| `spawn`: new `adb shell input swipe` per action | 623 ms | 660 ms |
-| `shell`: one persistent `adb shell` | 572 ms | 601 ms |
-| ~~`cmd`: persistent shell + `cmd input`~~ | ~~10 ms~~ | invalid: see below |
+**End-to-end input latency**: from sending a touch until it is *visible in the captured
+frames* (Android's pointer-location overlay, 12 presses each, every one confirmed on screen):
+
+| Input path | p50 | p95 | Registered |
+|---|---|---|---|
+| Android `input` command via a persistent ADB shell | 203 ms | 236 ms | 12/12 |
+| **scrcpy server as an on-device touch injector** | **69 ms** | **93 ms** | 12/12 |
+| `cmd input` (Android's built-in "fast path") | – | – | not implemented on this build |
 
 | Capture backend | Per frame p50 | Frames/s |
 |---|---|---|
@@ -39,19 +42,25 @@ Measured on an HP Spectre 16 (i7-1360P, 16 GB, Windows 11), BlueStacks 5, Androi
 | **`dxcam`** (Desktop Duplication, time to a *new* frame) | **16.7 ms** | **60** (the game's frame rate) |
 
 **Findings**
-- **Input is the bottleneck: ~600 ms per action.** Keeping one ADB shell open only saved
-  ~50 ms; the real cost is Android's `input` command starting a fresh runtime on every
-  swipe. That's far too slow to play at game speed (target: 15 actions/s).
-- **A false result, caught.** `cmd input` first measured 10 ms (a "60× speedup"), but on
-  this BlueStacks Android 11 build it replies `No shell command implementation.` and does
-  nothing: the benchmark was timing an error message. Lesson: latency numbers need
-  end-to-end verification that the action actually happened. Next step: an end-to-end
-  check (input → visible on screen) and a persistent on-device input injector.
-- **Capture keeps up with the game.** Both desktop-capture backends deliver every frame
-  the game renders (60 fps); screenshots over ADB are ~50× too slow to play with.
-- **A benchmark bug worth noting:** dxcam first reported 0.07 ms/frame because it returns
-  nothing when the screen hasn't changed and the code re-used the previous frame.
-  Measuring *time to a new frame* gives the honest number.
+- **~3× faster input, verified on screen.** Android's `input` command starts a fresh
+  runtime for every touch. Instead, Q-Train pushes scrcpy's server to the emulator once and
+  keeps it running; each touch is then a 32-byte message over a socket. The remaining
+  ~69 ms is mostly the display pipeline both paths share (Android draws, BlueStacks
+  renders, Windows composites, 60 fps capture); at 15 decisions/s an action lands about
+  one tick later.
+- **A false result, caught.** An earlier benchmark timed how long each command took to
+  *return*, and `cmd input` scored 10 ms (a "60× speedup"). On this Android 11 build it
+  replies `No shell command implementation.` and does nothing: the benchmark was timing an
+  error message. That's why latency is now measured end-to-end, from touch sent to touch
+  visible, which a no-op can't fake.
+- **Making the end-to-end test actually see touches.** The overlay's crosshair is 1 device
+  pixel wide, about a third of a pixel once captured, so the first detector missed every
+  press. Watching the overlay's coordinate readout instead gives an unmistakable signal
+  (866 changed pixels for a press vs. 0 without).
+- **Capture keeps up with the game.** Both desktop-capture backends deliver every frame the
+  game renders (60 fps); screenshots over ADB are ~50× too slow to play with. (dxcam first
+  reported 0.07 ms/frame because it re-used the previous frame when nothing changed;
+  measuring *time to a new frame* gives the honest number.)
 
 Raw numbers: [`results/`](results/).
 
@@ -73,14 +82,21 @@ Raw numbers: [`results/`](results/).
 
 ## Stage 1: benchmark
 
-Open Subway Surfers to its main menu, keep the BlueStacks window visible
-(not minimized or covered), then:
+Keep the BlueStacks window visible (not minimized or covered), then:
 
 ```powershell
 python -m qtrain.bench --list-devices       # e.g. 127.0.0.1:5556
 python -m qtrain.bench --list-windows       # find the emulator window title
 python -m qtrain.bench --serial 127.0.0.1:5556 --window "BlueStacks App Player 1" --save-frames
 ```
+
+End-to-end input latency (open the game's **pause screen** first; it's static):
+```powershell
+python -m qtrain.bench --serial 127.0.0.1:5556 --window "BlueStacks App Player 1" --e2e
+```
+The fast input path needs [scrcpy](https://github.com/Genymobile/scrcpy) installed
+(`winget install --id Genymobile.scrcpy`); Q-Train uses its on-device server and falls back to
+`adb shell input` if it can't start.
 
 | Capture backend | How it works |
 |---|---|
@@ -93,6 +109,7 @@ python -m qtrain.bench --serial 127.0.0.1:5556 --window "BlueStacks App Player 1
 | `spawn` | new `adb shell input swipe` process per action (the naive approach) |
 | `shell` | one persistent `adb shell`; commands streamed over stdin |
 | `cmd` | persistent shell + `cmd input`, skipping the `input` wrapper (only where Android implements it; auto-detected) |
+| `scrcpy` | scrcpy's server kept running on the device, injecting touches sent over a socket |
 
 ## Stage 2: playing hands-free
 
@@ -155,18 +172,20 @@ collision, so the crash penalty lands a little after the mistake.
 
 ```
 qtrain/
-  adb.py         # device connection, swipe geometry, input backends
-  capture.py     # DPI-aware window lookup + capture backends
-  bench.py       # latency benchmark CLI
-  vision.py      # game-area crop, observations, red-X popup detector
-  screens.py     # screen templates, calibration file, classifier
-  controller.py  # reset/step game loop (no Gymnasium; testable with fakes)
-  env.py         # Gymnasium environment
-  calibrate.py   # interactive calibration
-  watch.py       # live debug view
-  run.py         # play episodes with a baseline policy
-tests/           # unit tests incl. a scripted fake game (CI on Ubuntu + Windows)
-results/         # committed benchmark and run outputs
+  adb.py           # device connection, swipe geometry, ADB input backends
+  scrcpy_input.py  # fast input: scrcpy server as an on-device touch injector
+  e2e.py           # end-to-end input latency (touch sent -> visible on screen)
+  capture.py       # DPI-aware window lookup + capture backends
+  bench.py         # latency benchmark CLI
+  vision.py        # game-area crop, observations, red-X popup detector
+  screens.py       # screen templates, calibration file, classifier
+  controller.py    # reset/step game loop (no Gymnasium; testable with fakes)
+  env.py           # Gymnasium environment
+  calibrate.py     # interactive calibration
+  watch.py         # live debug view
+  run.py           # play episodes with a baseline policy
+tests/             # unit tests incl. a scripted fake game (CI on Ubuntu + Windows)
+results/           # committed benchmark and run outputs
 ```
 
 ## Notes

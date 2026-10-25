@@ -28,10 +28,11 @@ def main(argv=None) -> None:
     p.add_argument("--hz", type=float, default=15.0)
     p.add_argument("--capture", default="dxcam", choices=["dxcam", "mss"])
     p.add_argument("--seed", type=int, default=0)
+    p.add_argument("--input", default="auto", choices=["auto", "scrcpy", "shell", "spawn"])
     args = p.parse_args(argv)
 
     env = SubwaySurfersEnv(args.serial, args.window, capture=args.capture,
-                           config=ControllerConfig(hz=args.hz))
+                           config=ControllerConfig(hz=args.hz), input_backend=args.input)
     env.action_space.seed(args.seed)
     rows = []
     t_start = time.perf_counter()

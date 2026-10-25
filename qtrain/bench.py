@@ -19,9 +19,16 @@ from pathlib import Path
 
 import numpy as np
 
-from .adb import BACKENDS as INPUT_BACKENDS
+from .adb import BACKENDS as ADB_BACKENDS
 from .adb import AdbDevice, list_devices, supports_cmd_input
 from .capture import CAPTURE_BACKENDS, list_windows, make_capture
+from .scrcpy_input import ScrcpyDevice
+
+INPUT_BACKENDS = (*ADB_BACKENDS, "scrcpy")
+
+
+def open_input(backend: str, serial: str):
+    return ScrcpyDevice(serial) if backend == "scrcpy" else AdbDevice(serial, backend=backend)
 
 
 def summarize(seconds: list[float]) -> dict:
@@ -59,9 +66,9 @@ def bench_capture(backend: str, args) -> dict:
 
 def bench_input(backend: str, args) -> dict:
     if backend == "cmd" and not supports_cmd_input(args.serial):
-        return {"skipped": "`cmd input` unavailable (needs Android 10+)"}
+        return {"skipped": "`cmd input` not implemented on this device"}
     moves = ["left", "right"]
-    with AdbDevice(args.serial, backend=backend) as dev:
+    with open_input(backend, args.serial) as dev:
         for i in range(3):
             dev.act(moves[i % 2], wait=True)
         n = max(10, args.n // 4)  # inputs are slow; fewer samples keep it short
@@ -85,6 +92,41 @@ def _save_frame(frame, path: Path) -> None:
         return
     path.parent.mkdir(parents=True, exist_ok=True)
     cv2.imwrite(str(path), np.ascontiguousarray(frame))
+
+
+def bench_e2e(backend: str, args) -> dict:
+    """Input -> visible-on-screen latency via Android's pointer-location overlay."""
+    from .e2e import measure
+    from .screens import CALIBRATION_FILE, Calibration
+
+    cal_path = Path("assets") / CALIBRATION_FILE
+    area = Calibration.load("assets").game_area if cal_path.exists() else None
+    if area is None:
+        print("  (no calibration found: using the whole window, so press positions may be off)")
+    cap = make_capture(args.e2e_capture, window=args.window, serial=args.serial)
+    try:
+        with open_input(backend, args.serial) as dev:
+            seen = measure(dev, cap, area, args.serial, trials=args.e2e_trials)
+    finally:
+        cap.close()
+    hits = [t for t in seen if t is not None]
+    res = {"trials": len(seen), "seen": len(hits)}
+    if hits:
+        res |= summarize(hits)
+    return res
+
+
+def e2e_markdown(results: dict) -> str:
+    lines = ["**End-to-end input latency** (touch sent -> visible in captured frames)", "",
+             "| backend | p50 | p95 | registered |", "|---|---|---|---|"]
+    for name, r in results.items():
+        if "error" in r:
+            lines.append(f"| {name} | – | – | {r['error']} |")
+        elif "p50_ms" not in r:
+            lines.append(f"| {name} | – | – | 0/{r['trials']} (input never reached the screen) |")
+        else:
+            lines.append(f"| {name} | {r['p50_ms']} ms | {r['p95_ms']} ms | {r['seen']}/{r['trials']} |")
+    return "\n".join(lines)
 
 
 def to_markdown(results: dict) -> str:
@@ -113,7 +155,11 @@ def main(argv=None) -> None:
     p.add_argument("--serial", default="127.0.0.1:5555", help="ADB serial (BlueStacks default)")
     p.add_argument("--window", default="BlueStacks", help="substring of the emulator window title")
     p.add_argument("--capture", nargs="*", default=list(CAPTURE_BACKENDS), choices=CAPTURE_BACKENDS)
-    p.add_argument("--input", nargs="*", default=list(INPUT_BACKENDS), choices=INPUT_BACKENDS)
+    p.add_argument("--input", nargs="*", default=None, choices=INPUT_BACKENDS)
+    p.add_argument("--e2e", action="store_true",
+                   help="measure input -> visible-on-screen latency instead (run on the pause screen)")
+    p.add_argument("--e2e-trials", type=int, default=12)
+    p.add_argument("--e2e-capture", default="dxcam", choices=["dxcam", "mss"])
     p.add_argument("-n", type=int, default=100, help="samples per capture backend")
     p.add_argument("--save-frames", action="store_true", help="write one sample frame per backend to data/")
     p.add_argument("--list-windows", action="store_true")
@@ -127,6 +173,24 @@ def main(argv=None) -> None:
     if args.list_devices:
         print("\n".join(list_devices()) or "(no devices; is ADB enabled in BlueStacks settings?)")
         return
+
+    if args.e2e:
+        backends = args.input if args.input is not None else ["shell", "scrcpy"]
+        e2e = {}
+        for b in backends:
+            print(f"e2e: {b} ...", flush=True)
+            try:
+                e2e[b] = bench_e2e(b, args)
+            except Exception as e:  # report and keep going
+                e2e[b] = {"error": f"{type(e).__name__}: {e}"}
+        out = Path("results") / f"e2e-{time.strftime('%Y%m%d-%H%M%S')}.json"
+        out.parent.mkdir(exist_ok=True)
+        out.write_text(json.dumps({"e2e": e2e, "machine": {"platform": platform.platform()}}, indent=2))
+        print("\n" + e2e_markdown(e2e))
+        print(f"\nraw numbers: {out}")
+        return
+    if args.input is None:
+        args.input = list(INPUT_BACKENDS)
 
     results = {"capture": {}, "input": {},
                "machine": {"platform": platform.platform(), "processor": platform.processor()}}

@@ -37,5 +37,13 @@ def test_noop_sends_nothing():
 
 def test_command_prefix():
     g = SwipeGeometry(1000, 2000, frac=0.2, duration_ms=30)
-    assert g.command("right") == "input swipe 400 1000 600 1000 30"
+    assert g.command("right") == "input swipe 400 1600 600 1600 30"
     assert g.command("right", "cmd input").startswith("cmd input swipe ")
+
+
+def test_swipes_stay_below_the_continue_dialog():
+    # the "Continue?" dialog (and its key button) spans roughly 29%-71% of the screen height
+    g = SwipeGeometry(270, 480)
+    for action in ("left", "right", "up", "down"):
+        x1, y1, x2, y2 = g.swipe(action)
+        assert min(y1, y2) > 0.71 * 480 and max(y1, y2) < 480

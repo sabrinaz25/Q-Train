@@ -16,9 +16,9 @@ import gymnasium as gym
 import numpy as np
 from gymnasium import spaces
 
-from .adb import AdbDevice, best_backend
 from .capture import make_capture
 from .controller import ACTIONS, ControllerConfig, GameController
+from .scrcpy_input import open_device
 from .screens import Calibration
 
 
@@ -27,11 +27,12 @@ class SubwaySurfersEnv(gym.Env):
 
     def __init__(self, serial: str = "127.0.0.1:5556", window: str = "BlueStacks App Player",
                  calibration_dir: str = "assets", capture: str = "dxcam",
-                 config: ControllerConfig | None = None, render_mode: str | None = None):
+                 config: ControllerConfig | None = None, render_mode: str | None = None,
+                 input_backend: str = "auto"):
         cfg = config or ControllerConfig()
         self.metadata = {**self.metadata, "render_fps": cfg.hz}
         self.render_mode = render_mode
-        self.device = AdbDevice(serial, backend=best_backend(serial))
+        self.device = open_device(serial, input_backend)
         print(f"[qtrain] {serial}: screen {self.device.width}x{self.device.height}, "
               f"input backend '{self.device.backend}'")
         self.capture = make_capture(capture, window=window, serial=serial)

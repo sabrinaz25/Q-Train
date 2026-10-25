@@ -123,12 +123,18 @@ def parse_display_size(dumpsys: str, wm_size: str = "") -> tuple[int, int]:
 class SwipeGeometry:
     width: int
     height: int
-    frac: float = 0.25      # swipe length as a fraction of the screen
+    frac: float = 0.25      # horizontal swipe length as a fraction of the width
     duration_ms: int = 40
+    # Swipe in the lower part of the screen. The game reads swipes anywhere, and
+    # this keeps every touch clear of the "Continue?" dialog in the middle,
+    # whose key button a swipe could otherwise start on (spending a key) in the
+    # moment between a crash and the bot recognising that screen.
+    cy_frac: float = 0.8
+    v_frac: float = 0.16    # vertical swipe length: stays within the bottom ~30%
 
     def swipe(self, action: str) -> tuple[int, int, int, int] | None:
-        cx, cy = self.width // 2, self.height // 2
-        dx, dy = int(self.width * self.frac), int(self.height * self.frac)
+        cx, cy = self.width // 2, int(self.height * self.cy_frac)
+        dx, dy = int(self.width * self.frac), int(self.height * self.v_frac)
         return {
             "noop": None,
             "left": (cx + dx // 2, cy, cx - dx // 2, cy),
@@ -222,6 +228,10 @@ class AdbDevice:
 
     def tap(self, x: int, y: int) -> None:
         self._run(f"tap {x} {y}")
+
+    def press(self, x: int, y: int, seconds: float) -> None:
+        """Hold a finger down at (x, y): a zero-length swipe. Used by the end-to-end test."""
+        self._run(f"swipe {x} {y} {x} {y} {int(seconds * 1000)}")
 
     def back(self) -> None:
         """Android Back button (KEYCODE_BACK)."""

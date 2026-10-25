@@ -1,0 +1,25 @@
+{
+  "e2e": {
+    "shell": {
+      "trials": 12,
+      "seen": 12,
+      "n": 12,
+      "p50_ms": 202.75,
+      "p95_ms": 236.22,
+      "mean_ms": 239.25,
+      "per_sec": 4.2
+    },
+    "scrcpy": {
+      "trials": 12,
+      "seen": 12,
+      "n": 12,
+      "p50_ms": 68.81,
+      "p95_ms": 92.64,
+      "mean_ms": 78.19,
+      "per_sec": 12.8
+    }
+  },
+  "machine": {
+    "platform": "Windows-10-10.0.26200-SP0"
+  }
+}
