@@ -116,7 +116,7 @@ def to_markdown(results: dict) -> str:
 
 def main(argv=None) -> None:
     p = argparse.ArgumentParser(description="Benchmark capture and input latency.")
-    p.add_argument("--serial", default="127.0.0.1:5555", help="ADB serial (BlueStacks default 127.0.0.1:5555)")
+    p.add_argument("--serial", default="127.0.0.1:5555", help="ADB serial (BlueStacks default)")
     p.add_argument("--window", default="BlueStacks", help="substring of the emulator window title")
     p.add_argument("--capture", nargs="*", default=list(CAPTURE_BACKENDS), choices=CAPTURE_BACKENDS)
     p.add_argument("--input", nargs="*", default=list(INPUT_BACKENDS), choices=INPUT_BACKENDS)
