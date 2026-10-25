@@ -16,6 +16,7 @@ from __future__ import annotations
 import os
 import re
 import shutil
+import struct
 import subprocess
 import threading
 import time
@@ -52,12 +53,56 @@ def connect(serial: str) -> None:
             raise RuntimeError(f"adb connect {serial}: {msg.strip()}")
 
 
+def supports_cmd_input(serial: str) -> bool:
+    """True if `cmd input` actually implements tap/swipe on this device.
+
+    Some Android builds list an "input" service but answer `cmd input ...` with
+    "No shell command implementation." and do nothing, which looks like a
+    suspiciously fast input that never reaches the game. Ask for its help text
+    and check it really offers the commands we use.
+    """
+    try:
+        out = run_adb("shell", "cmd input help 2>&1", serial=serial).lower()
+    except RuntimeError:
+        return False
+    return "no shell command" not in out and "swipe" in out and "tap" in out
+
+
+def best_backend(serial: str) -> str:
+    return "cmd" if supports_cmd_input(serial) else "shell"
+
+
 def list_devices() -> list[str]:
     lines = run_adb("devices").strip().splitlines()[1:]
     return [ln.split()[0] for ln in lines if ln.strip().endswith("device")]
 
 
 # ---------------------------------------------------------------- geometry
+def screencap_size(serial: str) -> tuple[int, int]:
+    """(width, height) of what the screen shows right now, read from a screenshot header.
+
+    This is the coordinate space taps and swipes use. It's more trustworthy than
+    `dumpsys`, which on BlueStacks can report a landscape display while the game
+    runs in portrait (that sent every tap to the wrong spot).
+    """
+    cmd = [adb_path(), "-s", serial, "exec-out", "screencap"]
+    raw = subprocess.run(cmd, capture_output=True, check=True, timeout=20).stdout
+    if len(raw) < 12:
+        raise RuntimeError("screencap returned no data")
+    w, h = struct.unpack_from("<II", raw)
+    return int(w), int(h)
+
+
+def screen_size(serial: str) -> tuple[int, int]:
+    """Tap/swipe coordinate space; screenshot header first, dumpsys as a fallback."""
+    try:
+        return screencap_size(serial)
+    except (RuntimeError, subprocess.SubprocessError, struct.error):
+        disp = run_adb("shell", "dumpsys", "window", "displays", serial=serial)
+        wm = run_adb("shell", "wm", "size", serial=serial)
+        return parse_display_size(disp, wm)
+
+
 def parse_display_size(dumpsys: str, wm_size: str = "") -> tuple[int, int]:
     """Current-orientation display size in pixels.
 
@@ -107,9 +152,7 @@ class AdbDevice:
         self.serial = serial
         self.backend = backend
         connect(serial)
-        disp = run_adb("shell", "dumpsys", "window", "displays", serial=serial)
-        wm = run_adb("shell", "wm", "size", serial=serial)
-        self.geom = SwipeGeometry(*parse_display_size(disp, wm))
+        self.geom = SwipeGeometry(*screen_size(serial))
         self._proc: subprocess.Popen | None = None
         self._lock = threading.Lock()
         self._marker = 0
@@ -162,12 +205,27 @@ class AdbDevice:
                 if line.strip() == mark:
                     return
 
-    def tap(self, x: int, y: int) -> None:
-        cmd = f"{self._prefix} tap {x} {y}"
+    @property
+    def width(self) -> int:
+        return self.geom.width
+
+    @property
+    def height(self) -> int:
+        return self.geom.height
+
+    def _run(self, args: str) -> None:
+        cmd = f"{self._prefix} {args}"
         if self.backend == "spawn":
             run_adb("shell", *cmd.split(), serial=self.serial)
         else:
             self._shell(cmd, wait=True)
+
+    def tap(self, x: int, y: int) -> None:
+        self._run(f"tap {x} {y}")
+
+    def back(self) -> None:
+        """Android Back button (KEYCODE_BACK)."""
+        self._run("keyevent 4")
 
     def close(self) -> None:
         if self._proc:

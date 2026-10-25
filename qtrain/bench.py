@@ -20,7 +20,7 @@ from pathlib import Path
 import numpy as np
 
 from .adb import BACKENDS as INPUT_BACKENDS
-from .adb import AdbDevice, list_devices, run_adb
+from .adb import AdbDevice, list_devices, supports_cmd_input
 from .capture import CAPTURE_BACKENDS, list_windows, make_capture
 
 
@@ -55,13 +55,6 @@ def bench_capture(backend: str, args) -> dict:
         return res
     finally:
         cap.close()
-
-
-def supports_cmd_input(serial: str) -> bool:
-    try:
-        return "input" in run_adb("shell", "cmd", "-l", serial=serial).split()
-    except RuntimeError:
-        return False
 
 
 def bench_input(backend: str, args) -> dict:

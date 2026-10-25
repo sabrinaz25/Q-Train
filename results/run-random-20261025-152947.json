@@ -1,0 +1,57 @@
+{
+  "args": {
+    "serial": "127.0.0.1:5556",
+    "window": "BlueStacks App Player 1",
+    "episodes": 3,
+    "policy": "random",
+    "hz": 15.0,
+    "capture": "dxcam",
+    "seed": 0
+  },
+  "summary": {
+    "episodes": 3,
+    "mean_steps": 29.3,
+    "mean_reset_seconds": 4.16,
+    "mean_achieved_hz": 14.9,
+    "time_playing_pct": 32.1,
+    "steps_per_hour": 17240,
+    "controller_stats": {
+      "tap:menu": 1,
+      "episodes": 3,
+      "tap:save_me": 4,
+      "tap:game_over": 4
+    }
+  },
+  "episodes": [
+    {
+      "episode": 1,
+      "steps": 33,
+      "return": 2.2,
+      "play_seconds": 2.21,
+      "achieved_hz": 15.0,
+      "reset_seconds": 1.68,
+      "ended_on": "save_me",
+      "truncated": false
+    },
+    {
+      "episode": 2,
+      "steps": 27,
+      "return": 1.6,
+      "play_seconds": 1.81,
+      "achieved_hz": 14.9,
+      "reset_seconds": 5.38,
+      "ended_on": "save_me",
+      "truncated": false
+    },
+    {
+      "episode": 3,
+      "steps": 28,
+      "return": 1.7,
+      "play_seconds": 1.88,
+      "achieved_hz": 14.9,
+      "reset_seconds": 5.41,
+      "ended_on": "save_me",
+      "truncated": false
+    }
+  ]
+}
