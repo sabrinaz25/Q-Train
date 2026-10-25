@@ -1,0 +1,15 @@
+[project]
+name = "qtrain"
+version = "0.1.0"
+description = "An agent that learns to play Subway Surfers from screen pixels across parallel Android emulators"
+requires-python = ">=3.10"
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

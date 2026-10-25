@@ -1,0 +1,34 @@
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Secrets
+.env
+
+# Game material and recorded data: never commit (not ours to redistribute)
+assets/
+data/
+recordings/
+*.apk
+*.xapk
+
+# Models and training logs (large)
+checkpoints/
+*.pt
+*.pth
+*.onnx
+runs/
+wandb/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/settings.json
+.idea/
+
+# Note: results/ IS committed - benchmark JSON files are small and are the project's evidence.
