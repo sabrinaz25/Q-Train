@@ -20,6 +20,7 @@ from __future__ import annotations
 import struct
 import subprocess
 import sys
+import time
 
 import numpy as np
 
@@ -164,6 +165,17 @@ class DxcamCapture:
                 frame = self.cam.grab(region=client_region(self.hwnd))
             self.last = frame
         return self.last
+
+    def grab_fresh(self, timeout: float = 1.0) -> np.ndarray:
+        """Block until the screen region actually changes (or time out)."""
+        deadline = time.perf_counter() + timeout
+        while time.perf_counter() < deadline:
+            frame = self.cam.grab(region=client_region(self.hwnd))
+            if frame is not None:
+                self.last = frame
+                self.fresh += 1
+                return frame
+        raise TimeoutError("no new frame; is the game animating and the window visible?")
 
     def close(self) -> None:
         del self.cam

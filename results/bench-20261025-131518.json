@@ -1,0 +1,88 @@
+{
+  "capture": {
+    "adb": {
+      "n": 100,
+      "p50_ms": 618.81,
+      "p95_ms": 837.93,
+      "mean_ms": 635.56,
+      "per_sec": 1.6,
+      "frame_shape": [
+        1920,
+        1080,
+        3
+      ]
+    },
+    "mss": {
+      "n": 100,
+      "p50_ms": 16.46,
+      "p95_ms": 22.83,
+      "mean_ms": 17.29,
+      "per_sec": 57.9,
+      "frame_shape": [
+        1165,
+        693,
+        3
+      ]
+    },
+    "dxcam": {
+      "n": 100,
+      "p50_ms": 0.07,
+      "p95_ms": 0.1,
+      "mean_ms": 0.1,
+      "per_sec": 10078.7,
+      "frame_shape": [
+        1165,
+        693,
+        3
+      ],
+      "fresh_frames": 2
+    }
+  },
+  "input": {
+    "spawn": {
+      "round_trip": {
+        "n": 25,
+        "p50_ms": 623.44,
+        "p95_ms": 659.52,
+        "mean_ms": 628.27,
+        "per_sec": 1.6
+      }
+    },
+    "shell": {
+      "round_trip": {
+        "n": 25,
+        "p50_ms": 571.96,
+        "p95_ms": 600.95,
+        "mean_ms": 576.69,
+        "per_sec": 1.7
+      },
+      "host_only": {
+        "n": 25,
+        "p50_ms": 0.0,
+        "p95_ms": 0.01,
+        "mean_ms": 0.0,
+        "per_sec": 249999.8
+      }
+    },
+    "cmd": {
+      "round_trip": {
+        "n": 25,
+        "p50_ms": 10.1,
+        "p95_ms": 17.49,
+        "mean_ms": 11.04,
+        "per_sec": 90.6
+      },
+      "host_only": {
+        "n": 25,
+        "p50_ms": 0.0,
+        "p95_ms": 0.02,
+        "mean_ms": 0.01,
+        "per_sec": 146027.9
+      }
+    }
+  },
+  "machine": {
+    "platform": "Windows-10-10.0.26200-SP0",
+    "processor": "Intel64 Family 6 Model 186 Stepping 2, GenuineIntel"
+  }
+}

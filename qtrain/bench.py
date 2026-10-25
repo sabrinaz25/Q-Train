@@ -41,10 +41,11 @@ def bench_capture(backend: str, args) -> dict:
     cap = make_capture(backend, window=args.window, serial=args.serial)
     try:
         frame = cap.grab()  # warm-up; also checks it works at all
+        grab = getattr(cap, "grab_fresh", cap.grab)  # dxcam: time to a *new* frame
         times = []
         for _ in range(args.n):
             t0 = time.perf_counter()
-            frame = cap.grab()
+            frame = grab()
             times.append(time.perf_counter() - t0)
         res = summarize(times) | {"frame_shape": list(frame.shape)}
         if hasattr(cap, "fresh"):

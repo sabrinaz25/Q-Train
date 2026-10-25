@@ -1,0 +1,36 @@
+{
+  "capture": {
+    "adb": {
+      "n": 100,
+      "p50_ms": 762.27,
+      "p95_ms": 1142.16,
+      "mean_ms": 793.08,
+      "per_sec": 1.3,
+      "frame_shape": [
+        1920,
+        1080,
+        3
+      ]
+    },
+    "mss": {
+      "n": 100,
+      "p50_ms": 17.15,
+      "p95_ms": 31.86,
+      "mean_ms": 19.13,
+      "per_sec": 52.3,
+      "frame_shape": [
+        1165,
+        693,
+        3
+      ]
+    },
+    "dxcam": {
+      "error": "TimeoutError: no new frame; is the game animating and the window visible?"
+    }
+  },
+  "input": {},
+  "machine": {
+    "platform": "Windows-10-10.0.26200-SP0",
+    "processor": "Intel64 Family 6 Model 186 Stepping 2, GenuineIntel"
+  }
+}

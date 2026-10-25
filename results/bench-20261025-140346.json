@@ -1,0 +1,46 @@
+{
+  "capture": {
+    "adb": {
+      "n": 100,
+      "p50_ms": 907.84,
+      "p95_ms": 1292.64,
+      "mean_ms": 929.52,
+      "per_sec": 1.1,
+      "frame_shape": [
+        1920,
+        1080,
+        3
+      ]
+    },
+    "mss": {
+      "n": 100,
+      "p50_ms": 16.9,
+      "p95_ms": 21.21,
+      "mean_ms": 17.3,
+      "per_sec": 57.8,
+      "frame_shape": [
+        1165,
+        693,
+        3
+      ]
+    },
+    "dxcam": {
+      "n": 100,
+      "p50_ms": 16.67,
+      "p95_ms": 31.74,
+      "mean_ms": 17.65,
+      "per_sec": 56.7,
+      "frame_shape": [
+        1165,
+        693,
+        3
+      ],
+      "fresh_frames": 101
+    }
+  },
+  "input": {},
+  "machine": {
+    "platform": "Windows-10-10.0.26200-SP0",
+    "processor": "Intel64 Family 6 Model 186 Stepping 2, GenuineIntel"
+  }
+}
