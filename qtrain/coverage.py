@@ -39,6 +39,7 @@ class CoverageObserver:
     in_app: bool = True
     samples: int = 0
     out_of_app_samples: int = 0
+    outside_packages: dict[str, int] = field(default_factory=dict)  # what was in front instead
 
     def __post_init__(self):
         self._pending: np.ndarray | None = None
@@ -56,6 +57,9 @@ class CoverageObserver:
             self.in_app = bool(act) and act.split("/")[0] == self.app.package
             if self.in_app:
                 self.activities[act] = self.activities.get(act, 0) + 1
+            else:
+                pkg = act.split("/")[0] if act else "unknown"
+                self.outside_packages[pkg] = self.outside_packages.get(pkg, 0) + 1
         self.samples += 1
         if not self.in_app:
             self.out_of_app_samples += 1
@@ -116,6 +120,7 @@ class CoverageObserver:
             "time_in_app_pct": round(100 * (1 - self.out_of_app_samples / self.samples), 1)
             if self.samples else None,
             "activities": sorted(self.activities),
+            "outside_packages": dict(sorted(self.outside_packages.items(), key=lambda kv: -kv[1])),
             "crash_signatures": sorted({sig for _, _, sig in crashes}),
             "timeline": self.timeline,
         }

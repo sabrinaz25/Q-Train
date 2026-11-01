@@ -1,12 +1,16 @@
 """Systematic app exploration from screen pixels: the second application on Q-Train's core.
 
-Works on any Android app with no app-specific setup: no templates, no
-accessibility tree, no source code. Each step:
+Works on any Android app with no app-specific setup: no templates, no source
+code. Each step:
 
   1. Wait for the screen to settle, then fingerprint it (qtrain.fingerprint).
      A new fingerprint is a new node in the app's screen graph.
-  2. On a new screen, find what looks tappable from pixels alone (find_targets):
-     edges, merged into blocks, kept if button-sized. Plus one "scroll" action.
+  2. On a new screen, find what's tappable. Primary source: Android's
+     accessibility tree (`uiautomator dump`), which lists every element the app
+     marks clickable, with exact bounds. Fallback when the tree is empty (games,
+     web views, custom-drawn UI): find_targets, from pixels. Plus one "scroll".
+     The tree takes ~1-2 s to read, so it is read once per *new* screen only.
+     (Pixel-only targets measured 7 of 8 taps dead on a real app.)
   3. Act on an untried target. If the screen didn't change, the target is dead.
      If it did, record the edge (screen, target) -> new screen.
   4. When a screen has nothing left to try, walk the recorded edges to the
@@ -97,6 +101,7 @@ class Node:
     actions: list                     # Target or SCROLL
     tried: set = field(default_factory=set)
     outside: bool | None = None       # None: not checked yet
+    source: str = ""                  # where its targets came from: "a11y", "pixels" or "none"
 
     def untried(self) -> list:
         return [a for i, a in enumerate(self.actions) if i not in self.tried]
@@ -111,6 +116,8 @@ class ExplorerConfig:
     threshold: float = 0.10           # fingerprint distance that makes a different screen
     scroll: bool = True
     seed: int = 0
+    targets: str = "hybrid"           # "hybrid" (tree, else pixels), "a11y" or "pixels"
+    launch_wait: float = 2.5          # s to let a relaunched app come to the front
 
 
 class Explorer:
@@ -126,6 +133,9 @@ class Explorer:
         self.rng = random.Random(self.cfg.seed)
         self._frame: np.ndarray | None = None
         self._outside_streak = 0
+        self.root: int | None = None      # the app's starting screen: Back there exits the app
+        self.back_exits: set[int] = set()  # screens where Back was seen to leave the app
+        self._backed_from: int | None = None
 
     # ------------------------------------------------------------- seeing
     def _fp(self) -> np.ndarray:
@@ -144,13 +154,54 @@ class Explorer:
         fp = self.settle()
         sid, new = self.screens.add(fp)
         if new:
-            targets = find_targets(self._frame, self.crop)
+            targets, source = self._find_targets()
             self.rng.shuffle(targets)
-            self.nodes[sid] = Node(targets + ([SCROLL] if self.cfg.scroll else []))
+            self.nodes[sid] = Node(targets + ([SCROLL] if self.cfg.scroll else []), source=source)
         node = self.nodes[sid]
         if node.outside is None:                 # one Android query per screen, not per step
-            node.outside = self.app.current_package() != self.app.package
+            node.outside = not self._in_app()
+        if self.root is None and not node.outside:
+            self.root = sid
         return sid
+
+    def _in_app(self) -> bool:
+        pkg = self.app.current_package()
+        if pkg != self.app.package:
+            self.stats[f"outside:{pkg or 'unknown'}"] += 1   # which app/dialog was in front
+        return pkg == self.app.package
+
+    def _find_targets(self) -> tuple[list[Target], str]:
+        if self.cfg.targets in ("hybrid", "a11y"):
+            targets = self._tree_targets()
+            if targets or self.cfg.targets == "a11y":
+                source = "a11y" if targets else "none"
+                self.stats[f"screens:{source}"] += 1
+                return targets, source
+        self.stats["screens:pixels"] += 1
+        return find_targets(self._frame, self.crop), "pixels"
+
+    def _tree_targets(self) -> list[Target]:
+        """Clickable elements from Android's accessibility tree, in frame coordinates."""
+        dump = getattr(self.app, "ui_dump", None)
+        if dump is None:
+            return []
+        t0 = self.clock()
+        xml = dump()
+        ms = int((self.clock() - t0) * 1000)
+        self.stats["a11y_ms"] += ms
+        self.stats["a11y_reads"] += 1
+        self.stats["a11y_max_ms"] = max(self.stats["a11y_max_ms"], ms)
+        if not xml:
+            self.stats["a11y_failed"] += 1
+            return []
+        from .android import parse_clickables
+        boxes, display = parse_clickables(xml, self.app.package)
+        if not boxes or display is None:
+            return []
+        fh, fw = self._frame.shape[:2]
+        sx, sy = fw / display[0], fh / display[1]
+        return [Target(int(x1 * sx), int(y1 * sy), max(1, int((x2 - x1) * sx)), max(1, int((y2 - y1) * sy)))
+                for x1, y1, x2, y2 in boxes]
 
     # ------------------------------------------------------------- acting
     def _to_device(self, x: int, y: int) -> tuple[int, int]:
@@ -184,6 +235,16 @@ class Explorer:
     def step(self) -> dict:
         sid = self.current()
         node = self.nodes[sid]
+        if node.outside and self._backed_from is not None:
+            self.back_exits.add(self._backed_from)    # learned: Back there leaves the app
+            self.stats["learned_back_exits"] += 1
+        self._backed_from = None
+        if node.outside and self._in_app():
+            # The cached answer came from a transition (Android briefly reports the launcher
+            # while an app starts): this screen is the app's. Caching "outside" here made
+            # the splash screen trigger Back -> exit -> relaunch -> splash, in a loop.
+            node.outside = False
+            self.stats["outside_corrected"] += 1
         if node.outside:
             self._outside_streak += 1
             if self._outside_streak == 1:
@@ -193,6 +254,7 @@ class Explorer:
                 self.app.launch()
                 self.stats["relaunches"] += 1
                 self._outside_streak = 0
+                self.sleep(self.cfg.launch_wait)
             self.sleep(0.5)
             return {"screen": sid, "action": "recover"}
         self._outside_streak = 0
@@ -204,8 +266,19 @@ class Explorer:
         else:
             path = self._path_to_untried(sid)
             if path is None:
+                if sid == self.root or sid in self.back_exits:
+                    # Back on the starting screen exits the app (then a relaunch lands right
+                    # back here): try a random spot instead, which can find what we missed.
+                    fh, fw = self._frame.shape[:2]
+                    x = self.rng.randint(int(fw * 0.05), int(fw * 0.95))
+                    y = self.rng.randint(int(fh * 0.10), int(fh * 0.95))
+                    self.dev.tap(*self._to_device(x, y))
+                    self.stats["random_taps"] += 1
+                    self.sleep(self.cfg.change_timeout)
+                    return {"screen": sid, "action": "random"}
                 self.dev.back()
                 self.stats["back:exhausted"] += 1
+                self._backed_from = sid
                 return {"screen": sid, "action": "back"}
             idx = path[0]                      # replay a known edge towards unexplored screens
             self.stats["navigate"] += 1

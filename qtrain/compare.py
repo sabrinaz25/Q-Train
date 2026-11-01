@@ -94,6 +94,10 @@ def main(argv=None) -> None:
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--monkey-throttle", type=int, default=200, help="ms between monkey events")
     p.add_argument("--max-size", type=int, default=480, help="video size for frames and touches")
+    p.add_argument("--keep-data", action="store_true",
+                   help="don't wipe the app's data before each driver (default: wipe, so both start fresh)")
+    p.add_argument("--targets", default="hybrid", choices=["hybrid", "a11y", "pixels"],
+                   help="explorer: where tappable elements come from")
     args = p.parse_args(argv)
 
     if args.list_packages:
@@ -115,6 +119,10 @@ def main(argv=None) -> None:
     for name in drivers:
         print(f"\n== {name}: {args.minutes} min on {args.package}")
         app.force_stop()
+        if not args.keep_data:
+            app.clear_data()      # same fresh-install state for every driver
+        granted = app.grant_permissions()   # skip the system permission dialogs (see android.py)
+        print(f"granted: {', '.join(g.rsplit('.', 1)[-1] for g in granted) or 'nothing'}")
         app.launch()
         time.sleep(3)
         session = ScrcpySession(args.serial, decode=True, max_size=args.max_size, max_fps=30,
@@ -126,7 +134,8 @@ def main(argv=None) -> None:
             seconds = args.minutes * 60
             if name == "explorer":
                 device = ScrcpyDevice(session=session)
-                driver_stats = Explorer(device, capture, app, ExplorerConfig(seed=args.seed)).run(seconds)
+                cfg = ExplorerConfig(seed=args.seed, targets=args.targets)
+                driver_stats = Explorer(device, capture, app, cfg).run(seconds)
                 device.close()
             else:
                 driver_stats = run_monkey(args.serial, args.package, seconds, args.seed, args.monkey_throttle)
@@ -139,6 +148,8 @@ def main(argv=None) -> None:
         print(f"{name}: {cov['unique_screens']} screens, {cov['unique_activities']} activities, "
               f"{cov['crashes']} crashes ({cov['unique_crashes']} unique), {cov['anrs']} ANRs, "
               f"{cov['time_in_app_pct']}% of samples in the app")
+        if cov.get("outside_packages"):
+            print(f"  in front instead of the app: {cov['outside_packages']}")
 
     out = Path("results") / f"compare-{args.package}-{stamp}.json"
     out.write_text(json.dumps({"args": vars(args), "results": results}, indent=2))
