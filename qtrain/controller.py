@@ -59,7 +59,8 @@ class ControllerConfig:
     poll: float = 0.25               # s between checks while waiting
     back_after_unknown: int = 12     # press Android Back after this many unknown screens in a row
     restart_after: float = 45.0      # s into a reset that hasn't reached a run: restart the app (once)
-    stuck_taps: int = 3              # same screen after this many taps: the tap isn't working
+    stuck_taps: int = 3              # same screen after this many taps...
+    stuck_seconds: float = 4.0       # ...and this long: the tap isn't working (not just a slow screen)
     debug_dir: str = "data/debug"
 
 
@@ -129,6 +130,13 @@ class GameController:
         cv2.imwrite(str(path), self.last_canon)
         return path
 
+    def _act_on(self, det: Detection) -> None:
+        """Do what a recognized screen asks: press Back or tap its point."""
+        if det.key == "back":
+            self.dev.back()
+        elif det.tap is not None:
+            self.dev.tap(*self.to_device(det.tap))
+
     def _unstick(self, screen: str) -> None:
         """Taps on `screen` stopped working: close a popup if one is visible, else press Back."""
         self.stats["stuck"] += 1
@@ -154,7 +162,7 @@ class GameController:
         t0 = self.clock()
         unknown = 0
         restarted = False
-        last_tapped, same_taps, unsticks = None, 0, 0
+        last_tapped, same_taps, unsticks, first_tap_at = None, 0, 0, 0.0
         path: list[str] = []
         while True:
             # restart after `restart_after` s, or sooner once cheaper unsticking has failed twice
@@ -192,14 +200,17 @@ class GameController:
                 self.stats[f"back:{det.name}"] += 1
                 self.sleep(cfg.settle)
             elif det.tap is not None:
-                same_taps = same_taps + 1 if det.name == last_tapped else 1
-                last_tapped = det.name
-                if same_taps > cfg.stuck_taps:
+                if det.name != last_tapped:
+                    last_tapped, same_taps, first_tap_at = det.name, 0, self.clock()
+                same_taps += 1
+                # Both conditions: a slow screen also survives a few taps, and recovering
+                # from it is harmful (Back during a run that did start pauses the game).
+                if same_taps > cfg.stuck_taps and self.clock() - first_tap_at >= cfg.stuck_seconds:
                     # Still on the same screen after several taps: something is covering the
                     # button (e.g. a popup over a screen whose template still matches).
                     self._unstick(det.name)
                     unsticks += 1
-                    same_taps = 0
+                    last_tapped = None
                     self.sleep(cfg.settle)
                     continue
                 self.dev.tap(*self.to_device(det.tap))
@@ -244,6 +255,10 @@ class GameController:
             delay = round(now - self._lost_since, 3)
             self.crash_delays.append(delay)
             info["crash_delay_s"] = delay
+        if det.role == "dismiss":
+            # a popup mid-run (e.g. the game paused): clear it now rather than abandon the run
+            self._act_on(det)
+            self.stats["mid_run_dismiss"] += 1
         if det.role in ("playing", "crash"):
             self._lost_since = None
         else:

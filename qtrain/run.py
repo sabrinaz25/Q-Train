@@ -22,7 +22,8 @@ import numpy as np
 
 from .controller import ControllerConfig
 
-RECOVERY_KEYS = ("tap:red_x", "relocated", "back", "stuck", "app_restarts", "lost_track")
+RECOVERY_KEYS = ("tap:red_x", "relocated", "back", "stuck", "mid_run_dismiss", "app_restarts",
+                 "lost_track")
 
 
 def percentile(values: list[float], q: float) -> float | None:

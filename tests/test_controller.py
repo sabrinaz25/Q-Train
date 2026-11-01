@@ -294,7 +294,7 @@ def test_taps_that_stop_working_escalate_to_back():
                           clock=clock, sleep=clock.sleep)
     _, info = ctrl.reset()
     assert ctrl.stats["stuck"] == 1 and ctrl.stats["stuck:back"] == 1
-    assert sum(1 for s, *_ in game.taps if s == "over_popup") == ctrl.cfg.stuck_taps
+    assert sum(1 for s, *_ in game.taps if s == "over_popup") >= ctrl.cfg.stuck_taps
     assert game.screen == "playing" and clock.t < 15        # recovered in seconds, not a 45 s restart
 
 
@@ -324,3 +324,31 @@ def test_popup_back_cannot_close_triggers_early_restart():
     assert ctrl.stats["stuck"] == 2 and ctrl.stats["app_restarts"] == 1
     assert clock.t < ctrl.cfg.restart_after                          # didn't wait the full 45 s
     assert "RESTART" in info["screens"] and game.screen == "playing"
+
+
+def test_slow_screen_is_not_mistaken_for_stuck():
+    """A screen that takes a few taps' worth of time to change must not trigger recovery."""
+    game, clock = FakeGame("game_over"), FakeClock()
+    real_tap = FakeGame.tap
+
+    def slow_tap(x, y):
+        if game.screen != "game_over":
+            return real_tap(game, x, y)
+        game.taps.append((game.screen, x, y))
+        if len(game.taps) >= 4:                                      # responds on the 4th tap (~2.4 s)
+            game.taps.pop()
+            real_tap(game, x, y)
+    game.tap = slow_tap
+    ctrl = GameController(game, game, calibration(), ControllerConfig(debug_dir=tempfile.mkdtemp()),
+                          clock=clock, sleep=clock.sleep)
+    ctrl.reset()
+    assert ctrl.stats["stuck"] == 0 and game.backs == 0
+
+
+def test_popup_mid_run_is_dismissed_immediately():
+    ctrl, game, clock = make(crash_after=10**9, hz=10)
+    ctrl.reset()
+    game.screen = "popup"                                     # red-X popup appears during the run
+    *_, term, trunc, info = ctrl.step(0)
+    assert info["screen"] == "red_x" and not term and not trunc
+    assert ctrl.stats["mid_run_dismiss"] == 1 and game.screen == "menu"   # tapped its X

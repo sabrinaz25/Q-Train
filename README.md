@@ -6,8 +6,8 @@ recovery, and measured performance at every stage. It is demonstrated on **Subwa
 demanding real-time game; an **app explorer** for automated mobile testing is the next
 application.
 
-**Status:** work in progress. Low-latency I/O and hands-free control are complete; reliability,
-the app explorer, parallel workers and observability are planned (see [Roadmap](#roadmap)).
+**Status:** work in progress. Low-latency I/O, hands-free control and reliability (100/100
+unattended episodes) are complete; the app explorer is next (see [Roadmap](#roadmap)).
 
 Controlling a real app from outside exposes problems a simulator hides: frames must be captured
 and touches injected fast enough to act in real time, the app's state has to be inferred from
@@ -59,8 +59,8 @@ Each milestone is defined by the numbers it must produce.
 |---|---|---|---|
 | 1 | Low-latency I/O | Complete | End-to-end input latency 69 ms p50; capture 60 fps |
 | 2 | Hands-free control | Complete | 15 Hz control rate; automatic resets and popup handling |
-| 3 | Reliability | In progress | Reset time 7.4 → 4.97 s; 49/50 unattended in the first soak test; next: a clean 100+ episode run |
-| 4 | App explorer | Planned | Unique screens reached per hour vs. Android's `monkey` tester; crashes found |
+| 3 | Reliability | Complete | 100/100 episodes unattended; reset 7.4 → 4.2 s p50; throughput +57% |
+| 4 | App explorer | Next | Unique screens reached per hour vs. Android's `monkey` tester; crashes found |
 | 5 | Parallel workers | Planned | Throughput vs. number of instances; recovery time after injected faults |
 | 6 | Observability | Planned | Per-stage latency breakdown (capture, recognition, decision, touch), p50/p95 |
 
@@ -102,16 +102,21 @@ own screen streamed by scrcpy's server. Same input path (scrcpy injector) for bo
 | Needs the screen located inside a window | yes | **no** | **no** |
 
 
-### Hands-free control: 50-episode soak test (random policy)
+### Hands-free control: soak tests (random policy)
 
-| Metric | Before (Oct 25) | Now (Oct 31, 50 episodes, 7 min) |
-|---|---|---|
-| Control rate achieved | 15.0 Hz | 14.9 Hz, steady across all episodes |
-| Reset time (crash to next run) | 7.4 s mean | **4.97 s p50, 6.07 s p95** |
-| Share of wall-clock time spent playing | 25% | **40%** |
-| Throughput, one instance | ~13,500 steps/hour | **~21,500 steps/hour (+59%)** |
-| Episodes completed without help | n/a | 49/50 (one manual popup dismissal; see findings) |
-| In-game currency spent | 0 | 0 |
+| Metric | Before (Oct 25) | 50-episode soak | **100-episode soak** |
+|---|---|---|---|
+| Episodes completed, no human help | n/a | 49/50 | **100/100** |
+| Failures / app restarts needed | n/a | 0 / 0 | **0 / 0** |
+| Control rate achieved | 15.0 Hz | 14.9 Hz | **14.9 Hz**, steady |
+| Reset time (crash to next run) | 7.4 s mean | 4.97 s p50, 6.07 p95, 15.1 max | **4.20 s p50, 5.28 p95, 5.89 max** |
+| Share of wall-clock time spent playing | 25% | 40% | **40%** |
+| Throughput, one instance | ~13,500 steps/h | ~21,500 steps/h | **~21,200 steps/h** |
+| Crash detection delay (HUD gone to crash screen) | n/a | n/a | **1.19 s p50, 1.60 s p95** |
+| In-game currency spent | 0 | 0 | 0 |
+
+The 100-episode test ran with the emulator in airplane mode (verified with
+`settings get global airplane_mode_on`), which removes network hangs and most server-driven popups.
 
 ### Findings
 
@@ -154,6 +159,14 @@ own screen streamed by scrcpy's server. Same input path (scrcpy injector) for bo
   to closing a popup or pressing Back. A second episode was filed as "lost track"; its saved frame
   showed a crash animation that hid the HUD for over 2 s before "Continue?" appeared, so crashes
   now get 6 s and the HUD-to-crash-screen delay is measured as a metric.
+- **Recovery actions have side effects.** In the 100-episode run the only two incidents were
+  linked: a score screen that was merely slow got treated as stuck, and the Back press meant to
+  unstick it reached the game after the run had started, which pauses the game. Stuck detection
+  now needs time as well as repeated taps (4 s), and popups that appear mid-run (like the pause
+  screen) are dismissed immediately instead of the run being abandoned.
+- **The game itself can hang.** Online, the game sometimes froze on a loading spinner waiting
+  for its servers, and the bot could not distinguish "busy" from "blocked". Running the emulator
+  offline removed the cause; treating loading states as "wait" screens is a planned refinement.
 
 ## Optimization log
 
@@ -173,6 +186,7 @@ before and after.
 | Cost of finding the game | Full-image running-count tables; every candidate edge as an anchor | Read only the few candidate lines; anchor only on strong edges; uint8 OpenCV differencing | 252 → 84 ms per search (3x), identical results |
 | Tap placement | Screen size and orientation from `dumpsys` | Size read from a screenshot header | Taps landed off target → on target |
 | Reset time | Wait ~10 s for the "Continue?" prompt to expire | Dismiss it with Android Back (verified to cost no keys); "press Back" as a screen action | 7.4 → 4.97 s p50; time playing 25 → 40%; throughput +59% |
+| Over-eager recovery | Stuck = same screen after 3 taps | Stuck = 3 taps *and* 4 s; mid-run popups dismissed in place | Removes the one self-inflicted incident in 100 episodes (a Back press pausing a run) |
 | Silent stuck states | Trust template matches; recover only from unrecognized screens | Detect taps without effect (same screen after 3 taps) and escalate: popup close, then Back | Found by the soak test (1 manual intervention in 50); covered by a regression test |
 | Unwanted currency spending | Tap away the "Continue?" prompt; swipes at screen centre | No tap (prompt expires); swipes confined to the lower screen | Keys spent per run: >0 → 0 |
 
@@ -295,9 +309,9 @@ Actions: `0` no-op, `1` left, `2` right, `3` jump, `4` roll. Reward: +0.1 per st
   confined to the lower part of the screen so they cannot land on its buttons.
 
 **Known limitation:** the "Continue?" prompt appears after the crash animation, so the crash
-penalty arrives after the action that caused it. The delay (HUD vanishing to crash screen) is now
-measured in every run as `crash_detection_delay_s`; the HUD vanishing itself is a candidate for
-earlier crash detection.
+penalty arrives after the action that caused it: measured at 1.19 s p50 and 1.60 s p95 (about
+18-24 control steps at 15 Hz). The HUD vanishing marks the crash itself and is a candidate signal
+for earlier crash detection when training a policy.
 
 ## Project layout
 

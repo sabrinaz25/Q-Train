@@ -1,0 +1,1667 @@
+{
+  "args": {
+    "serial": "127.0.0.1:5555",
+    "window": "BlueStacks App Player 1",
+    "episodes": 100,
+    "minutes": null,
+    "policy": "random",
+    "hz": 15.0,
+    "capture": "dxcam",
+    "seed": 0,
+    "input": "auto",
+    "app_package": "com.kiloo.subwaysurf"
+  },
+  "summary": {
+    "episodes_attempted": 100,
+    "episodes_completed": 100,
+    "failures": 0,
+    "success_rate_pct": 100.0,
+    "wall_minutes": 12.2,
+    "reset_seconds_p50": 4.2,
+    "reset_seconds_p95": 5.28,
+    "reset_seconds_max": 5.89,
+    "mean_steps": 43.2,
+    "mean_achieved_hz": 14.9,
+    "time_playing_pct": 39.6,
+    "steps_per_hour": 21218,
+    "crash_detection_delay_s_p50": 1.19,
+    "crash_detection_delay_s_p95": 1.6,
+    "recoveries": {
+      "tap:red_x": 0,
+      "relocated": 2,
+      "back": 0,
+      "stuck": 1,
+      "app_restarts": 0,
+      "lost_track": 1
+    },
+    "recoveries_per_hour": 19.7,
+    "failure_reasons": [],
+    "controller_stats": {
+      "relocated": 2,
+      "unknown": 29,
+      "tap:menu": 1,
+      "episodes": 100,
+      "back:save_me": 314,
+      "tap:game_over": 202,
+      "stuck": 1,
+      "stuck:back": 1,
+      "lost_track": 1,
+      "tap:paused": 1
+    }
+  },
+  "episodes": [
+    {
+      "episode": 1,
+      "steps": 40,
+      "return": 2.9,
+      "play_seconds": 2.71,
+      "achieved_hz": 14.8,
+      "reset_seconds": 4.32,
+      "screens": [
+        "unknown",
+        "menu",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.15
+    },
+    {
+      "episode": 2,
+      "steps": 47,
+      "return": 3.6,
+      "play_seconds": 3.15,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.2,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.73
+    },
+    {
+      "episode": 3,
+      "steps": 42,
+      "return": 3.1,
+      "play_seconds": 2.84,
+      "achieved_hz": 14.8,
+      "reset_seconds": 3.6,
+      "screens": [
+        "save_me",
+        "game_over",
+        "unknown",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.285
+    },
+    {
+      "episode": 4,
+      "steps": 41,
+      "return": 3.0,
+      "play_seconds": 2.75,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.16,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.34
+    },
+    {
+      "episode": 5,
+      "steps": 52,
+      "return": 4.1,
+      "play_seconds": 3.48,
+      "achieved_hz": 15.0,
+      "reset_seconds": 5.03,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.124
+    },
+    {
+      "episode": 6,
+      "steps": 55,
+      "return": 4.4,
+      "play_seconds": 3.69,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.18,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.145
+    },
+    {
+      "episode": 7,
+      "steps": 45,
+      "return": 3.4,
+      "play_seconds": 3.01,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.23,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.261
+    },
+    {
+      "episode": 8,
+      "steps": 39,
+      "return": 2.8,
+      "play_seconds": 2.63,
+      "achieved_hz": 14.9,
+      "reset_seconds": 5.0,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.476
+    },
+    {
+      "episode": 9,
+      "steps": 39,
+      "return": 2.8,
+      "play_seconds": 2.64,
+      "achieved_hz": 14.8,
+      "reset_seconds": 4.17,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.358
+    },
+    {
+      "episode": 10,
+      "steps": 35,
+      "return": 2.4,
+      "play_seconds": 2.36,
+      "achieved_hz": 14.8,
+      "reset_seconds": 5.03,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.257
+    },
+    {
+      "episode": 11,
+      "steps": 49,
+      "return": 3.8,
+      "play_seconds": 3.29,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.15,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.121
+    },
+    {
+      "episode": 12,
+      "steps": 38,
+      "return": 2.7,
+      "play_seconds": 2.55,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.19,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.187
+    },
+    {
+      "episode": 13,
+      "steps": 36,
+      "return": 2.5,
+      "play_seconds": 2.41,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.17,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.115
+    },
+    {
+      "episode": 14,
+      "steps": 47,
+      "return": 3.6,
+      "play_seconds": 3.14,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.17,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.133
+    },
+    {
+      "episode": 15,
+      "steps": 35,
+      "return": 2.4,
+      "play_seconds": 2.36,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.18,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.135
+    },
+    {
+      "episode": 16,
+      "steps": 43,
+      "return": 3.2,
+      "play_seconds": 2.88,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.18,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.065
+    },
+    {
+      "episode": 17,
+      "steps": 38,
+      "return": 2.7,
+      "play_seconds": 2.55,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.48,
+      "screens": [
+        "save_me",
+        "game_over",
+        "unknown",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.134
+    },
+    {
+      "episode": 18,
+      "steps": 35,
+      "return": 2.4,
+      "play_seconds": 2.34,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.19,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.134
+    },
+    {
+      "episode": 19,
+      "steps": 32,
+      "return": 2.1,
+      "play_seconds": 2.15,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.24,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.136
+    },
+    {
+      "episode": 20,
+      "steps": 32,
+      "return": 2.1,
+      "play_seconds": 2.15,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.18,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.07
+    },
+    {
+      "episode": 21,
+      "steps": 32,
+      "return": 2.1,
+      "play_seconds": 2.15,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.16,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.129
+    },
+    {
+      "episode": 22,
+      "steps": 45,
+      "return": 3.4,
+      "play_seconds": 3.03,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.15,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.124
+    },
+    {
+      "episode": 23,
+      "steps": 45,
+      "return": 3.4,
+      "play_seconds": 3.01,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.17,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.187
+    },
+    {
+      "episode": 24,
+      "steps": 41,
+      "return": 3.0,
+      "play_seconds": 2.75,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.18,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.132
+    },
+    {
+      "episode": 25,
+      "steps": 34,
+      "return": 2.3,
+      "play_seconds": 2.29,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.2,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.133
+    },
+    {
+      "episode": 26,
+      "steps": 42,
+      "return": 3.1,
+      "play_seconds": 2.81,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.18,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.131
+    },
+    {
+      "episode": 27,
+      "steps": 39,
+      "return": 2.8,
+      "play_seconds": 2.62,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.17,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.13
+    },
+    {
+      "episode": 28,
+      "steps": 34,
+      "return": 2.3,
+      "play_seconds": 2.29,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.21,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.128
+    },
+    {
+      "episode": 29,
+      "steps": 35,
+      "return": 2.4,
+      "play_seconds": 2.35,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.17,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.188
+    },
+    {
+      "episode": 30,
+      "steps": 48,
+      "return": 3.7,
+      "play_seconds": 3.21,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.44,
+      "screens": [
+        "save_me",
+        "game_over",
+        "unknown",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.135
+    },
+    {
+      "episode": 31,
+      "steps": 38,
+      "return": 2.7,
+      "play_seconds": 2.55,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.22,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.122
+    },
+    {
+      "episode": 32,
+      "steps": 41,
+      "return": 3.0,
+      "play_seconds": 2.75,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.22,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.197
+    },
+    {
+      "episode": 33,
+      "steps": 33,
+      "return": 2.2,
+      "play_seconds": 2.22,
+      "achieved_hz": 14.8,
+      "reset_seconds": 4.21,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.14
+    },
+    {
+      "episode": 34,
+      "steps": 40,
+      "return": 2.9,
+      "play_seconds": 2.68,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.2,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.117
+    },
+    {
+      "episode": 35,
+      "steps": 48,
+      "return": 3.7,
+      "play_seconds": 3.21,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.18,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.178
+    },
+    {
+      "episode": 36,
+      "steps": 44,
+      "return": 3.3,
+      "play_seconds": 2.94,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.18,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.125
+    },
+    {
+      "episode": 37,
+      "steps": 38,
+      "return": 2.7,
+      "play_seconds": 2.55,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.19,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.138
+    },
+    {
+      "episode": 38,
+      "steps": 37,
+      "return": 2.6,
+      "play_seconds": 2.48,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.44,
+      "screens": [
+        "save_me",
+        "game_over",
+        "unknown",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.065
+    },
+    {
+      "episode": 39,
+      "steps": 44,
+      "return": 3.3,
+      "play_seconds": 2.98,
+      "achieved_hz": 14.8,
+      "reset_seconds": 5.02,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.427
+    },
+    {
+      "episode": 40,
+      "steps": 48,
+      "return": 3.7,
+      "play_seconds": 3.22,
+      "achieved_hz": 14.9,
+      "reset_seconds": 5.03,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.598
+    },
+    {
+      "episode": 41,
+      "steps": 35,
+      "return": 2.4,
+      "play_seconds": 2.34,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.21,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.056
+    },
+    {
+      "episode": 42,
+      "steps": 46,
+      "return": 3.5,
+      "play_seconds": 3.08,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.16,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.199
+    },
+    {
+      "episode": 43,
+      "steps": 41,
+      "return": 3.0,
+      "play_seconds": 2.76,
+      "achieved_hz": 14.9,
+      "reset_seconds": 5.02,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.415
+    },
+    {
+      "episode": 44,
+      "steps": 30,
+      "return": 1.9,
+      "play_seconds": 2.01,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.15,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.13
+    },
+    {
+      "episode": 45,
+      "steps": 31,
+      "return": 2.0,
+      "play_seconds": 2.09,
+      "achieved_hz": 14.9,
+      "reset_seconds": 5.08,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.136
+    },
+    {
+      "episode": 46,
+      "steps": 75,
+      "return": 6.4,
+      "play_seconds": 5.01,
+      "achieved_hz": 15.0,
+      "reset_seconds": 4.19,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.053
+    },
+    {
+      "episode": 47,
+      "steps": 43,
+      "return": 3.2,
+      "play_seconds": 2.88,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.17,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.199
+    },
+    {
+      "episode": 48,
+      "steps": 35,
+      "return": 2.4,
+      "play_seconds": 2.35,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.2,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.139
+    },
+    {
+      "episode": 49,
+      "steps": 58,
+      "return": 4.7,
+      "play_seconds": 3.89,
+      "achieved_hz": 14.9,
+      "reset_seconds": 5.01,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 2.471
+    },
+    {
+      "episode": 50,
+      "steps": 45,
+      "return": 3.4,
+      "play_seconds": 3.01,
+      "achieved_hz": 14.9,
+      "reset_seconds": 5.01,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.107
+    },
+    {
+      "episode": 51,
+      "steps": 34,
+      "return": 2.3,
+      "play_seconds": 2.29,
+      "achieved_hz": 14.8,
+      "reset_seconds": 4.16,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.259
+    },
+    {
+      "episode": 52,
+      "steps": 46,
+      "return": 3.5,
+      "play_seconds": 3.08,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.18,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.184
+    },
+    {
+      "episode": 53,
+      "steps": 45,
+      "return": 3.4,
+      "play_seconds": 3.03,
+      "achieved_hz": 14.9,
+      "reset_seconds": 5.3,
+      "screens": [
+        "save_me",
+        "game_over",
+        "unknown",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.338
+    },
+    {
+      "episode": 54,
+      "steps": 41,
+      "return": 3.0,
+      "play_seconds": 2.75,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.19,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.268
+    },
+    {
+      "episode": 55,
+      "steps": 48,
+      "return": 3.7,
+      "play_seconds": 3.23,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.97,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.337
+    },
+    {
+      "episode": 56,
+      "steps": 50,
+      "return": 3.9,
+      "play_seconds": 3.35,
+      "achieved_hz": 14.9,
+      "reset_seconds": 5.3,
+      "screens": [
+        "save_me",
+        "game_over",
+        "unknown",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.464
+    },
+    {
+      "episode": 57,
+      "steps": 48,
+      "return": 3.7,
+      "play_seconds": 3.22,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.67,
+      "screens": [
+        "save_me",
+        "game_over",
+        "unknown",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.524
+    },
+    {
+      "episode": 58,
+      "steps": 49,
+      "return": 3.8,
+      "play_seconds": 3.28,
+      "achieved_hz": 14.9,
+      "reset_seconds": 5.86,
+      "screens": [
+        "save_me",
+        "game_over",
+        "unknown",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.658
+    },
+    {
+      "episode": 59,
+      "steps": 51,
+      "return": 4.0,
+      "play_seconds": 3.42,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.18,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.259
+    },
+    {
+      "episode": 60,
+      "steps": 114,
+      "return": 11.4,
+      "play_seconds": 7.62,
+      "achieved_hz": 15.0,
+      "reset_seconds": 5.89,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "paused",
+      "truncated": true,
+      "crash_delay_s": null
+    },
+    {
+      "episode": 61,
+      "steps": 43,
+      "return": 3.2,
+      "play_seconds": 2.89,
+      "achieved_hz": 14.9,
+      "reset_seconds": 0.88,
+      "screens": [
+        "paused",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.267
+    },
+    {
+      "episode": 62,
+      "steps": 46,
+      "return": 3.5,
+      "play_seconds": 3.09,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.46,
+      "screens": [
+        "save_me",
+        "game_over",
+        "unknown",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.073
+    },
+    {
+      "episode": 63,
+      "steps": 44,
+      "return": 3.3,
+      "play_seconds": 2.95,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.47,
+      "screens": [
+        "save_me",
+        "game_over",
+        "unknown",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.467
+    },
+    {
+      "episode": 64,
+      "steps": 46,
+      "return": 3.5,
+      "play_seconds": 3.09,
+      "achieved_hz": 14.9,
+      "reset_seconds": 5.0,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.412
+    },
+    {
+      "episode": 65,
+      "steps": 34,
+      "return": 2.3,
+      "play_seconds": 2.29,
+      "achieved_hz": 14.8,
+      "reset_seconds": 4.17,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.271
+    },
+    {
+      "episode": 66,
+      "steps": 49,
+      "return": 3.8,
+      "play_seconds": 3.29,
+      "achieved_hz": 14.9,
+      "reset_seconds": 5.0,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.541
+    },
+    {
+      "episode": 67,
+      "steps": 42,
+      "return": 3.1,
+      "play_seconds": 2.82,
+      "achieved_hz": 14.9,
+      "reset_seconds": 5.0,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.267
+    },
+    {
+      "episode": 68,
+      "steps": 54,
+      "return": 4.3,
+      "play_seconds": 3.62,
+      "achieved_hz": 14.9,
+      "reset_seconds": 5.02,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.334
+    },
+    {
+      "episode": 69,
+      "steps": 45,
+      "return": 3.4,
+      "play_seconds": 3.03,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.19,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.387
+    },
+    {
+      "episode": 70,
+      "steps": 40,
+      "return": 2.9,
+      "play_seconds": 2.69,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.16,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.462
+    },
+    {
+      "episode": 71,
+      "steps": 50,
+      "return": 3.9,
+      "play_seconds": 3.35,
+      "achieved_hz": 14.9,
+      "reset_seconds": 5.05,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.123
+    },
+    {
+      "episode": 72,
+      "steps": 36,
+      "return": 2.5,
+      "play_seconds": 2.42,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.2,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.066
+    },
+    {
+      "episode": 73,
+      "steps": 33,
+      "return": 2.2,
+      "play_seconds": 2.22,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.2,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.066
+    },
+    {
+      "episode": 74,
+      "steps": 47,
+      "return": 3.6,
+      "play_seconds": 3.15,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.2,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.198
+    },
+    {
+      "episode": 75,
+      "steps": 39,
+      "return": 2.8,
+      "play_seconds": 2.63,
+      "achieved_hz": 14.8,
+      "reset_seconds": 4.99,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.211
+    },
+    {
+      "episode": 76,
+      "steps": 50,
+      "return": 3.9,
+      "play_seconds": 3.36,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.17,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.594
+    },
+    {
+      "episode": 77,
+      "steps": 38,
+      "return": 2.7,
+      "play_seconds": 2.55,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.14,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 0.991
+    },
+    {
+      "episode": 78,
+      "steps": 36,
+      "return": 2.5,
+      "play_seconds": 2.43,
+      "achieved_hz": 14.8,
+      "reset_seconds": 4.19,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.206
+    },
+    {
+      "episode": 79,
+      "steps": 39,
+      "return": 2.8,
+      "play_seconds": 2.61,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.19,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.267
+    },
+    {
+      "episode": 80,
+      "steps": 44,
+      "return": 3.3,
+      "play_seconds": 2.95,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.18,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.135
+    },
+    {
+      "episode": 81,
+      "steps": 41,
+      "return": 3.0,
+      "play_seconds": 2.76,
+      "achieved_hz": 14.8,
+      "reset_seconds": 4.21,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.415
+    },
+    {
+      "episode": 82,
+      "steps": 45,
+      "return": 3.4,
+      "play_seconds": 3.03,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.44,
+      "screens": [
+        "save_me",
+        "game_over",
+        "unknown",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.602
+    },
+    {
+      "episode": 83,
+      "steps": 53,
+      "return": 4.2,
+      "play_seconds": 3.55,
+      "achieved_hz": 14.9,
+      "reset_seconds": 5.0,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.234
+    },
+    {
+      "episode": 84,
+      "steps": 46,
+      "return": 3.5,
+      "play_seconds": 3.09,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.19,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.34
+    },
+    {
+      "episode": 85,
+      "steps": 38,
+      "return": 2.7,
+      "play_seconds": 2.56,
+      "achieved_hz": 14.8,
+      "reset_seconds": 4.18,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.279
+    },
+    {
+      "episode": 86,
+      "steps": 55,
+      "return": 4.4,
+      "play_seconds": 3.68,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.18,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.19
+    },
+    {
+      "episode": 87,
+      "steps": 46,
+      "return": 3.5,
+      "play_seconds": 3.1,
+      "achieved_hz": 14.8,
+      "reset_seconds": 5.28,
+      "screens": [
+        "save_me",
+        "game_over",
+        "unknown",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.354
+    },
+    {
+      "episode": 88,
+      "steps": 32,
+      "return": 2.1,
+      "play_seconds": 2.16,
+      "achieved_hz": 14.8,
+      "reset_seconds": 5.01,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.194
+    },
+    {
+      "episode": 89,
+      "steps": 38,
+      "return": 2.7,
+      "play_seconds": 2.56,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.16,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.542
+    },
+    {
+      "episode": 90,
+      "steps": 39,
+      "return": 2.8,
+      "play_seconds": 2.63,
+      "achieved_hz": 14.8,
+      "reset_seconds": 4.19,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.407
+    },
+    {
+      "episode": 91,
+      "steps": 42,
+      "return": 3.1,
+      "play_seconds": 2.81,
+      "achieved_hz": 14.9,
+      "reset_seconds": 5.31,
+      "screens": [
+        "save_me",
+        "game_over",
+        "unknown",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.381
+    },
+    {
+      "episode": 92,
+      "steps": 48,
+      "return": 3.7,
+      "play_seconds": 3.21,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.19,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.057
+    },
+    {
+      "episode": 93,
+      "steps": 55,
+      "return": 4.4,
+      "play_seconds": 3.68,
+      "achieved_hz": 14.9,
+      "reset_seconds": 5.02,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.665
+    },
+    {
+      "episode": 94,
+      "steps": 36,
+      "return": 2.5,
+      "play_seconds": 2.41,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.19,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.122
+    },
+    {
+      "episode": 95,
+      "steps": 53,
+      "return": 4.2,
+      "play_seconds": 3.57,
+      "achieved_hz": 14.8,
+      "reset_seconds": 4.19,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.422
+    },
+    {
+      "episode": 96,
+      "steps": 42,
+      "return": 3.1,
+      "play_seconds": 2.82,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.21,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.063
+    },
+    {
+      "episode": 97,
+      "steps": 35,
+      "return": 2.4,
+      "play_seconds": 2.37,
+      "achieved_hz": 14.8,
+      "reset_seconds": 5.0,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.218
+    },
+    {
+      "episode": 98,
+      "steps": 48,
+      "return": 3.7,
+      "play_seconds": 3.22,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.2,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.04
+    },
+    {
+      "episode": 99,
+      "steps": 42,
+      "return": 3.1,
+      "play_seconds": 2.82,
+      "achieved_hz": 14.9,
+      "reset_seconds": 4.17,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.38
+    },
+    {
+      "episode": 100,
+      "steps": 38,
+      "return": 2.7,
+      "play_seconds": 2.55,
+      "achieved_hz": 14.9,
+      "reset_seconds": 5.27,
+      "screens": [
+        "save_me",
+        "game_over",
+        "unknown",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false,
+      "crash_delay_s": 1.14
+    }
+  ]
+}
