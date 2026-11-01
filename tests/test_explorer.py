@@ -58,3 +58,74 @@ def test_leaving_the_app_presses_back_then_relaunches():
     ex.step()
     assert ex.stats["back:outside"] == 1 and ex.stats["relaunches"] == 1
     assert app.foreground == app.package
+
+
+class TreeApp(FakeApp):
+    """FakeApp that also answers `ui_dump` like Android: its real buttons, in display pixels."""
+
+    def __init__(self, *a, scale=4, empty=False, **kw):
+        super().__init__(*a, **kw)
+        self.scale, self.empty, self.dumps = scale, empty, 0
+
+    def ui_dump(self):
+        self.dumps += 1
+        s, H_, W_ = self.scale, self.height * self.scale, self.width * self.scale
+        nodes = [] if self.empty or self.foreground != self.package else [
+            f'<node package="{self.package}" clickable="true" enabled="true" '
+            f'bounds="[{bx * s},{by * s}][{(bx + bw) * s},{(by + bh) * s}]"/>'
+            for (bx, by, bw, bh), _ in SCREENS[self.screen][3]]
+        return (f'<?xml version="1.0"?><hierarchy><node package="{self.package}" '
+                f'bounds="[0,0][{W_},{H_}]">' + "".join(nodes) + "</node></hierarchy>")
+
+
+def test_tree_targets_hit_real_buttons():
+    app = TreeApp()
+    ex, _ = explorer(app, scroll=False)
+    dead_sources = []
+    for _ in range(300):
+        r = ex.step()
+        if r.get("changed") is False:
+            dead_sources.append(ex.nodes[r["screen"]].source)
+    assert ex.stats["screens:a11y"] >= 5
+    assert app.dumps == len(ex.nodes)                       # the tree is read once per new screen
+    # taps from the tree always hit a real button; only pixel guesses (on the one screen
+    # with no buttons at all, where the tree is empty) can be dead
+    assert "a11y" not in dead_sources
+
+
+def test_empty_tree_falls_back_to_pixels():
+    app = TreeApp(empty=True)
+    ex, _ = explorer(app)
+    ex.step()
+    assert ex.nodes[ex.root].source == "pixels" and len(ex.nodes[ex.root].actions) > 1
+
+
+def test_never_presses_back_on_the_starting_screen():
+    app = TreeApp(empty=True)
+    ex, _ = explorer(app, targets="a11y", scroll=False)     # no targets anywhere: always exhausted
+    for _ in range(30):
+        ex.step()
+        assert app.foreground == app.package                 # never exits the app
+    assert ex.stats["random_taps"] >= 1 and ex.stats["relaunches"] == 0
+
+
+def test_learns_where_back_exits_the_app():
+    app = TreeApp()
+    ex, _ = explorer(app)
+    sid = ex.current()
+    ex._backed_from = sid
+    app.foreground = "launcher"                              # that Back left the app
+    ex.step()
+    assert sid in ex.back_exits and ex.stats["learned_back_exits"] == 1
+
+
+def test_screen_wrongly_cached_as_outside_is_corrected():
+    app = TreeApp()
+    app.foreground = "launcher"                  # app still starting: Android reports the launcher
+    ex, _ = explorer(app)
+    app.foreground = app.package                 # ...but frames already show the app's screen
+    sid = ex.current()
+    ex.nodes[sid].outside = True                 # what the old cache would have stuck with
+    ex.step()
+    assert ex.stats["outside_corrected"] == 1 and ex.stats["back:outside"] == 0
+    assert ex.stats["relaunches"] == 0
