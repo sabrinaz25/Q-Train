@@ -87,3 +87,23 @@ def test_back_key_round_trips_and_is_validated(tmp_path):
     assert ScreenClassifier([loaded], detect_red_x=False).classify(MENU).key == "back"
     with pytest.raises(ValueError):
         ScreenTemplate("x", "dismiss", (0, 0, 1, 1), key="home")
+
+
+def test_popup_beats_the_screen_it_covers():
+    covered = MENU.copy()
+    cv2.putText(covered, "RATE US", (60, 250), cv2.FONT_HERSHEY_SIMPLEX, 1.2, (255, 255, 255), 3)
+    popup = template_from(covered, "rate", "dismiss", (50, 215, 220, 50), (180, 300))
+    menu_t = template_from(MENU, "menu", "start", (90, 545, 140, 50), (180, 320))
+    det = ScreenClassifier([menu_t, popup]).classify(covered)
+    assert det.name == "rate" and det.tap == (180, 300)        # menu still matches, popup wins
+
+
+def test_red_x_beats_a_covered_screen_but_not_a_run():
+    img = MENU.copy()
+    cv2.circle(img, (320, 60), 16, (40, 40, 220), -1)
+    cv2.line(img, (313, 53), (327, 67), (255, 255, 255), 3)
+    cv2.line(img, (313, 67), (327, 53), (255, 255, 255), 3)
+    menu_t = template_from(MENU, "menu", "start", (90, 545, 140, 50), (180, 320))
+    assert ScreenClassifier([menu_t]).classify(img).name == "red_x"
+    run_t = template_from(MENU, "playing", "playing", (90, 545, 140, 50))
+    assert ScreenClassifier([run_t]).classify(img).name == "playing"

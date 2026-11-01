@@ -137,16 +137,29 @@ class ScreenClassifier:
         return {t.name: self.score(gray, t) for t in self.templates}
 
     def classify(self, canon: np.ndarray) -> Detection:
+        """Which screen this is, with popups taking priority over what they cover.
+
+        Popups are drawn on top of other screens, whose templates often still match
+        through them (a rating prompt over the main menu scored 0.98 on the menu's
+        template). Picking the single best score would then act on the covered screen
+        and tap whatever the popup puts in that spot. So: a matched popup template
+        wins; otherwise a red close button wins over any covered screen except a run
+        in progress; otherwise the best match.
+        """
         gray = cv2.cvtColor(canon, cv2.COLOR_BGR2GRAY)
-        best: Detection | None = None
+        matches = []
         for t in self.templates:
             s = self.score(gray, t)
-            if s >= t.threshold and (best is None or s > best.score):
-                best = Detection(t.name, t.role, round(s, 3), t.tap, t.key)
-        if best is not None:
-            return best
+            if s >= t.threshold:
+                matches.append(Detection(t.name, t.role, round(s, 3), t.tap, t.key))
+        popups = [m for m in matches if m.role == "dismiss"]
+        if popups:
+            return max(popups, key=lambda m: m.score)
+        best = max(matches, key=lambda m: m.score) if matches else None
+        if best is not None and best.role == "playing":
+            return best                    # never let a red shape mid-run pre-empt the game
         if self.detect_red_x:
             xs = find_red_xs(canon)
             if xs:
                 return Detection("red_x", "dismiss", xs[0].score, xs[0].center)
-        return UNKNOWN
+        return best if best is not None else UNKNOWN
