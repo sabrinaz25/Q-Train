@@ -202,3 +202,17 @@ def test_layout_shift_is_recovered_by_relocating_not_back():
     assert info["screens"] == ["unknown", "menu", "playing"]
     assert ctrl.stats["relocated"] == before + 1 and game.backs == 0
     assert round(ctrl.area.x * 760) == 380
+
+
+class FullScreenGame(FakeGame):
+    """Frames straight from the device (like scrcpy capture): nothing to locate."""
+    full_screen = True
+
+
+def test_device_frames_skip_screen_location():
+    game, clock = FullScreenGame("menu"), FakeClock()
+    ctrl = GameController(game, game, calibration(), ControllerConfig(), clock=clock, sleep=clock.sleep)
+    assert ctrl.area is None and ctrl.relocate() is False
+    assert ctrl.stats["relocate_failed"] == 0
+    _, info = ctrl.reset()
+    assert info["screens"] == ["menu", "playing"]

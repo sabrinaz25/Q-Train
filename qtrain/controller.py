@@ -82,9 +82,15 @@ class GameController:
     def relocate(self) -> bool:
         """Re-find the game inside the window (e.g. after an ad panel shifts the layout).
 
-        Returns True if the area changed noticeably.
+        Returns True if the area changed noticeably. Frame sources that deliver the
+        device's own screen (scrcpy capture) have nothing to locate.
         """
-        found = locate_game(self.cap.grab())
+        if getattr(self.cap, "full_screen", False):
+            self.area = None
+            return False
+        w, h = getattr(self.dev, "width", 0), getattr(self.dev, "height", 0)
+        aspect = (w / h, h / w) if w and h else None   # device shape first, then rotated
+        found = locate_game(self.cap.grab(), **({"aspect": aspect} if aspect else {}))
         if found is None:
             self.stats["relocate_failed"] += 1
             return False

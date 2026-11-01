@@ -24,7 +24,7 @@ import time
 
 import numpy as np
 
-CAPTURE_BACKENDS = ("adb", "mss", "dxcam")
+CAPTURE_BACKENDS = ("adb", "mss", "dxcam", "scrcpy")
 
 
 # ------------------------------------------------------------ window lookup
@@ -84,6 +84,15 @@ def list_windows() -> list[tuple[int, str]]:
 def find_window(query: str) -> int:
     set_dpi_aware()
     return match_window(list_windows(), query)
+
+
+def check_on_screen(region: tuple[int, int, int, int], screen_w: int, screen_h: int) -> None:
+    """Desktop capture can only copy what is on the monitor: refuse clearly if the window isn't."""
+    left, top, right, bottom = region
+    if left < 0 or top < 0 or right > screen_w or bottom > screen_h:
+        raise RuntimeError(
+            f"the emulator window ({left},{top})-({right},{bottom}) extends past the edge of the "
+            f"{screen_w}x{screen_h} screen; move it fully onto the main display, or use --capture scrcpy")
 
 
 def client_region(hwnd: int) -> tuple[int, int, int, int]:
@@ -155,14 +164,19 @@ class DxcamCapture:
         self.last: np.ndarray | None = None
         self.fresh = 0      # how many grabs returned a genuinely new frame
 
+    def _region(self) -> tuple[int, int, int, int]:
+        region = client_region(self.hwnd)        # re-read every grab: tracks window moves
+        check_on_screen(region, self.cam.width, self.cam.height)
+        return region
+
     def grab(self) -> np.ndarray:
-        frame = self.cam.grab(region=client_region(self.hwnd))
+        frame = self.cam.grab(region=self._region())
         if frame is not None:
             self.last = frame
             self.fresh += 1
         elif self.last is None:  # very first grab on a static screen
             while frame is None:
-                frame = self.cam.grab(region=client_region(self.hwnd))
+                frame = self.cam.grab(region=self._region())
             self.last = frame
         return self.last
 
@@ -170,7 +184,7 @@ class DxcamCapture:
         """Block until the screen region actually changes (or time out)."""
         deadline = time.perf_counter() + timeout
         while time.perf_counter() < deadline:
-            frame = self.cam.grab(region=client_region(self.hwnd))
+            frame = self.cam.grab(region=self._region())
             if frame is not None:
                 self.last = frame
                 self.fresh += 1
@@ -181,7 +195,12 @@ class DxcamCapture:
         del self.cam
 
 
-def make_capture(backend: str, window: str | None = None, serial: str | None = None):
+def make_capture(backend: str, window: str | None = None, serial: str | None = None, **scrcpy_opts):
+    if backend == "scrcpy":
+        if not serial:
+            raise ValueError("scrcpy capture needs --serial")
+        from .scrcpy_client import ScrcpyCapture
+        return ScrcpyCapture(serial, **scrcpy_opts)
     if backend == "adb":
         if not serial:
             raise ValueError("adb capture needs --serial")

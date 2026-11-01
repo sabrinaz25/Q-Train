@@ -1,0 +1,34 @@
+{
+  "e2e": {
+    "dxcam+scrcpy": {
+      "trials": 20,
+      "seen": 20,
+      "n": 20,
+      "p50_ms": 63.03,
+      "p95_ms": 92.06,
+      "mean_ms": 80.76,
+      "per_sec": 12.4
+    },
+    "scrcpy@360+scrcpy": {
+      "trials": 20,
+      "seen": 20,
+      "n": 20,
+      "p50_ms": 96.14,
+      "p95_ms": 141.7,
+      "mean_ms": 103.16,
+      "per_sec": 9.7
+    },
+    "scrcpy@480+scrcpy": {
+      "trials": 20,
+      "seen": 20,
+      "n": 20,
+      "p50_ms": 94.65,
+      "p95_ms": 127.67,
+      "mean_ms": 93.06,
+      "per_sec": 10.7
+    }
+  },
+  "machine": {
+    "platform": "Windows-10-10.0.26200-SP0"
+  }
+}

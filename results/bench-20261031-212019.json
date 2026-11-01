@@ -1,0 +1,96 @@
+{
+  "capture": {
+    "dxcam": {
+      "n": 100,
+      "p50_ms": 15.97,
+      "p95_ms": 24.72,
+      "mean_ms": 14.39,
+      "per_sec": 69.5,
+      "frame_shape": [
+        1155,
+        1050,
+        3
+      ],
+      "cpu_process_pct": 233.4,
+      "cpu_system_pct": 58.3,
+      "cpu_process_pct_at_rate": 75.9,
+      "cpu_system_pct_at_rate": 61.1,
+      "read_hz": 15.0,
+      "fresh_frames": 174
+    },
+    "scrcpy@360": {
+      "n": 100,
+      "p50_ms": 23.08,
+      "p95_ms": 54.22,
+      "mean_ms": 27.01,
+      "per_sec": 37.0,
+      "frame_shape": [
+        360,
+        202,
+        3
+      ],
+      "cpu_process_pct": 93.7,
+      "cpu_system_pct": 51.3,
+      "cpu_process_pct_at_rate": 19.7,
+      "cpu_system_pct_at_rate": 27.9,
+      "read_hz": 15.0,
+      "scrcpy": {
+        "max_size": 360,
+        "max_fps": 60,
+        "bit_rate": 8000000
+      },
+      "fresh_frames": 176
+    },
+    "scrcpy@480": {
+      "n": 100,
+      "p50_ms": 16.34,
+      "p95_ms": 31.09,
+      "mean_ms": 17.54,
+      "per_sec": 57.0,
+      "frame_shape": [
+        480,
+        270,
+        3
+      ],
+      "cpu_process_pct": 53.4,
+      "cpu_system_pct": 37.5,
+      "cpu_process_pct_at_rate": 29.1,
+      "cpu_system_pct_at_rate": 41.1,
+      "read_hz": 15.0,
+      "scrcpy": {
+        "max_size": 480,
+        "max_fps": 60,
+        "bit_rate": 8000000
+      },
+      "fresh_frames": 175
+    },
+    "scrcpy@720": {
+      "n": 100,
+      "p50_ms": 18.23,
+      "p95_ms": 48.78,
+      "mean_ms": 22.38,
+      "per_sec": 44.7,
+      "frame_shape": [
+        720,
+        404,
+        3
+      ],
+      "cpu_process_pct": 56.5,
+      "cpu_system_pct": 39.6,
+      "cpu_process_pct_at_rate": 34.1,
+      "cpu_system_pct_at_rate": 42.8,
+      "read_hz": 15.0,
+      "scrcpy": {
+        "max_size": 720,
+        "max_fps": 60,
+        "bit_rate": 8000000
+      },
+      "fresh_frames": 175
+    }
+  },
+  "input": {},
+  "machine": {
+    "platform": "Windows-10-10.0.26200-SP0",
+    "processor": "Intel64 Family 6 Model 186 Stepping 2, GenuineIntel"
+  }
+}

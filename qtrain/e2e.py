@@ -52,13 +52,20 @@ def set_pointer_location(serial: str, on: bool) -> None:
 
 def measure(device, capture, area: GameArea | None, serial: str, trials: int = 12,
             hold: float = 0.4, timeout: float = 3.0, threshold: int = 20,
-            debug_dir: str | None = "data/debug") -> list[float | None]:
-    """Seconds from sending each press until it's visible; None if never seen."""
+            debug_dir: str | None = "data/debug", warmup: int = 1,
+            warmups: list | None = None) -> list[float | None]:
+    """Seconds from sending each press until it's visible; None if never seen.
+
+    The first `warmup` presses are run but not counted: the first touch of a session
+    is consistently slow (connections and caches warming up; 220-470 ms observed vs
+    ~60-100 ms after), which would inflate the tail percentiles. Their timings are
+    appended to `warmups` if given, so they're still reported.
+    """
     results: list[float | None] = []
     set_pointer_location(serial, True)
     time.sleep(1.0)
     try:
-        for i in range(trials):
+        for i in range(warmup + trials):
             fx = 0.3 if i % 2 == 0 else 0.7            # alternate columns so every press is a new change
             fy = 0.5
             cx = int(fx * CANON_W)
@@ -80,11 +87,16 @@ def measure(device, capture, area: GameArea | None, serial: str, trials: int = 1
                     seen = time.perf_counter() - t0
                     break
             worker.join(timeout=timeout + 5)
-            results.append(seen)
-            if seen:
-                print(f"  press {i + 1}/{trials}: {seen * 1000:.0f} ms", flush=True)
+            label = "warm-up" if i < warmup else f"press {i - warmup + 1}/{trials}"
+            if i < warmup:
+                if warmups is not None:
+                    warmups.append(seen)
             else:
-                print(f"  press {i + 1}/{trials}: not seen (best: {best} changed pixels in the overlay "
+                results.append(seen)
+            if seen:
+                print(f"  {label}: {seen * 1000:.0f} ms", flush=True)
+            else:
+                print(f"  {label}: not seen (best: {best} changed pixels in the overlay "
                       f"bar, need {threshold}; {frames} frames checked)", flush=True)
                 if debug_dir and not any(r is None for r in results[:-1]):  # save the first miss only
                     d = Path(debug_dir)

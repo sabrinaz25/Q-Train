@@ -26,7 +26,7 @@ def main(argv=None) -> None:
     p.add_argument("--episodes", type=int, default=5)
     p.add_argument("--policy", default="random", choices=["random", "noop"])
     p.add_argument("--hz", type=float, default=15.0)
-    p.add_argument("--capture", default="dxcam", choices=["dxcam", "mss"])
+    p.add_argument("--capture", default="dxcam", choices=["dxcam", "mss", "scrcpy"])
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--input", default="auto", choices=["auto", "scrcpy", "shell", "spawn"])
     args = p.parse_args(argv)

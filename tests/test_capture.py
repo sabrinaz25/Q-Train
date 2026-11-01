@@ -37,3 +37,11 @@ def test_screencap_decode(header_len):
 def test_screencap_decode_rejects_garbage():
     with pytest.raises(ValueError):
         AdbScreencap.decode(struct.pack("<III", 10, 10, 1) + b"\0" * 7)
+
+
+def test_window_must_be_fully_on_screen():
+    from qtrain.capture import check_on_screen
+    check_on_screen((0, 0, 3840, 2400), 3840, 2400)            # exactly fits: fine
+    for region in [(-5, 0, 600, 1100), (3500, 100, 4100, 1200), (100, 1500, 700, 2600)]:
+        with pytest.raises(RuntimeError, match="extends past the edge"):
+            check_on_screen(region, 3840, 2400)

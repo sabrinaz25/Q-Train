@@ -58,8 +58,9 @@ def _edge_candidates(score: np.ndarray, k: int, min_score: float) -> list[int]:
     return picked
 
 
-def locate_game(frame: np.ndarray, aspect: float = GAME_ASPECT, min_height_frac: float = 0.5,
-                k: int = 12, jump: int = 25, min_side: float = 0.5) -> tuple[GameArea, float] | None:
+def locate_game(frame: np.ndarray, aspect: float | tuple[float, ...] = (GAME_ASPECT, 1 / GAME_ASPECT),
+                min_height_frac: float = 0.4, k: int = 12, jump: int = 25,
+                min_side: float = 0.5) -> tuple[GameArea, float] | None:
     """Find the game's rectangle inside the emulator window, with no calibration.
 
     The game is drawn as a sharp-edged 9:16 rectangle inside the emulator's
@@ -78,24 +79,30 @@ def locate_game(frame: np.ndarray, aspect: float = GAME_ASPECT, min_height_frac:
     divider, produces a rectangle whose computed opposite side lands on
     nothing and scores low. Returns (area, score), score = mean fraction of
     each side that is a clear edge; None if nothing qualifies.
-    """
-    img = frame.astype(np.int16)
-    h, w = img.shape[:2]
-    # boundary b sits between pixel b-1 and b
-    v_edge = np.abs(np.diff(img, axis=1)).max(axis=2) > jump    # (h, w-1)
-    h_edge = np.abs(np.diff(img, axis=0)).max(axis=2) > jump    # (h-1, w)
-    v_cum = np.vstack([np.zeros((1, w - 1)), np.cumsum(v_edge, axis=0)])   # running count down each column
-    h_cum = np.hstack([np.zeros((h - 1, 1)), np.cumsum(h_edge, axis=1)])   # running count along each row
 
+    `aspect` is the device screen's width/height. By default both portrait and
+    landscape are tried, since apps can rotate the screen; pass the device's
+    current shape when it is known.
+    """
+    aspects = (aspect,) if isinstance(aspect, (int, float)) else tuple(aspect)
+    frame = np.ascontiguousarray(frame)
+    h, w = frame.shape[:2]
+    # boundary b sits between pixel b-1 and b; uint8 absdiff is faster than int16 maths
+    v_edge = cv2.absdiff(frame[:, 1:], frame[:, :-1]).max(axis=2) > jump   # (h, w-1)
+    h_edge = cv2.absdiff(frame[1:], frame[:-1]).max(axis=2) > jump         # (h-1, w)
+    v_cols = np.ascontiguousarray(v_edge.T)        # row i = boundary column i: fast slicing
+
+    # Side strength = share of a boundary line that is a clear edge, read directly from
+    # the line (only a few dozen lines are ever measured, so no whole-image tables).
     def v_side(b: int, top: int, bottom: int) -> float:
         if not 1 <= b <= w - 1:
             return 0.0
-        return (v_cum[bottom, b - 1] - v_cum[top, b - 1]) / (bottom - top)
+        return float(v_cols[b - 1, top:bottom].mean())
 
     def h_side(b: int, left: int, right: int) -> float:
         if not 1 <= b <= h - 1:
             return 0.0
-        return (h_cum[b - 1, right] - h_cum[b - 1, left]) / (right - left)
+        return float(h_edge[b - 1, left:right].mean())
 
     cols = [c + 1 for c in _edge_candidates(v_edge.mean(axis=0), k, 0.15)]
     rows = [r + 1 for r in _edge_candidates(h_edge.mean(axis=1), k, 0.2)]
@@ -105,23 +112,27 @@ def locate_game(frame: np.ndarray, aspect: float = GAME_ASPECT, min_height_frac:
             height = bottom - top
             if height < min_height_frac * h:
                 continue
-            width = round(height * aspect)
-            for c in cols:
-                for left in (c, c - width):
-                    right = left + width
-                    if left < 0 or right > w:
-                        continue
-                    # the computed side may be off by a pixel of rounding: take its best position
-                    vl = v_side(left, top, bottom) if left == c else max(
-                        v_side(left + d, top, bottom) for d in (-1, 0, 1))
-                    vr = v_side(right, top, bottom) if right == c else max(
-                        v_side(right + d, top, bottom) for d in (-1, 0, 1))
-                    sides = sorted((vl, vr, h_side(top, left, right), h_side(bottom, left, right)))
-                    if sides[1] < min_side:          # the three strongest sides must be clear edges
-                        continue
-                    score = float(np.mean(sides))
-                    if best is None or score > best[0]:
-                        best = (score, (left, top, width, height))
+            # Prune: of the two vertical sides at least one must be a clear edge, so only
+            # anchor on strong candidates (a strong computed side gets its own turn as anchor).
+            anchors = [c for c in cols if v_side(c, top, bottom) >= min_side]
+            for asp in aspects:
+                width = round(height * asp)
+                for c in anchors:
+                    for left in (c, c - width):
+                        right = left + width
+                        if left < 0 or right > w:
+                            continue
+                        # the computed side may be off by a pixel of rounding: take its best position
+                        vl = v_side(left, top, bottom) if left == c else max(
+                            v_side(left + d, top, bottom) for d in (-1, 0, 1))
+                        vr = v_side(right, top, bottom) if right == c else max(
+                            v_side(right + d, top, bottom) for d in (-1, 0, 1))
+                        sides = sorted((vl, vr, h_side(top, left, right), h_side(bottom, left, right)))
+                        if sides[1] < min_side:      # the three strongest sides must be clear edges
+                            continue
+                        score = float(np.mean(sides))
+                        if best is None or score > best[0]:
+                            best = (score, (left, top, width, height))
     if best is None:
         return None
     score, rect = best

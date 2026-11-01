@@ -1,0 +1,25 @@
+{
+  "e2e": {
+    "dxcam+scrcpy": {
+      "trials": 12,
+      "seen": 12,
+      "n": 12,
+      "p50_ms": 55.25,
+      "p95_ms": 66.61,
+      "mean_ms": 68.09,
+      "per_sec": 14.7
+    },
+    "scrcpy+scrcpy": {
+      "trials": 12,
+      "seen": 12,
+      "n": 12,
+      "p50_ms": 103.77,
+      "p95_ms": 157.15,
+      "mean_ms": 118.6,
+      "per_sec": 8.4
+    }
+  },
+  "machine": {
+    "platform": "Windows-10-10.0.26200-SP0"
+  }
+}

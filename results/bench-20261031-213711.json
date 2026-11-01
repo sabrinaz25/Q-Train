@@ -1,0 +1,208 @@
+{
+  "capture": {
+    "dxcam": {
+      "n": 100,
+      "p50_ms": 16.83,
+      "p95_ms": 33.44,
+      "mean_ms": 19.68,
+      "per_sec": 50.8,
+      "frame_shape": [
+        1155,
+        1050,
+        3
+      ],
+      "cpu_process_pct": 215.9,
+      "cpu_system_pct": 39.7,
+      "cpu_process_pct_at_rate": 37.2,
+      "cpu_system_pct_at_rate": 27.4,
+      "read_hz": 15.0,
+      "fresh_frames": 175,
+      "n_range": [
+        100,
+        100
+      ],
+      "p50_ms_range": [
+        16.76,
+        16.96
+      ],
+      "p95_ms_range": [
+        33.27,
+        34.19
+      ],
+      "mean_ms_range": [
+        18.67,
+        21.53
+      ],
+      "per_sec_range": [
+        46.4,
+        53.6
+      ],
+      "cpu_process_pct_range": [
+        181.8,
+        217.7
+      ],
+      "cpu_system_pct_range": [
+        37.0,
+        41.0
+      ],
+      "cpu_process_pct_at_rate_range": [
+        26.9,
+        46.2
+      ],
+      "cpu_system_pct_at_rate_range": [
+        24.9,
+        30.8
+      ],
+      "read_hz_range": [
+        15.0,
+        15.0
+      ],
+      "fresh_frames_range": [
+        175,
+        175
+      ],
+      "runs": 3
+    },
+    "scrcpy@360": {
+      "n": 100,
+      "p50_ms": 16.88,
+      "p95_ms": 22.25,
+      "mean_ms": 16.88,
+      "per_sec": 59.3,
+      "frame_shape": [
+        360,
+        202,
+        3
+      ],
+      "cpu_process_pct": 42.6,
+      "cpu_system_pct": 24.9,
+      "cpu_process_pct_at_rate": 24.7,
+      "cpu_system_pct_at_rate": 33.9,
+      "read_hz": 15.0,
+      "scrcpy": {
+        "max_size": 360,
+        "max_fps": 60,
+        "bit_rate": 8000000
+      },
+      "fresh_frames": 175,
+      "n_range": [
+        100,
+        100
+      ],
+      "p50_ms_range": [
+        16.69,
+        17.13
+      ],
+      "p95_ms_range": [
+        20.13,
+        25.6
+      ],
+      "mean_ms_range": [
+        16.37,
+        17.2
+      ],
+      "per_sec_range": [
+        58.1,
+        61.1
+      ],
+      "cpu_process_pct_range": [
+        35.4,
+        43.9
+      ],
+      "cpu_system_pct_range": [
+        21.8,
+        26.7
+      ],
+      "cpu_process_pct_at_rate_range": [
+        23.4,
+        25.6
+      ],
+      "cpu_system_pct_at_rate_range": [
+        32.1,
+        34.8
+      ],
+      "read_hz_range": [
+        15.0,
+        15.0
+      ],
+      "fresh_frames_range": [
+        175,
+        175
+      ],
+      "runs": 3
+    },
+    "scrcpy@480": {
+      "n": 100,
+      "p50_ms": 17.52,
+      "p95_ms": 43.12,
+      "mean_ms": 20.66,
+      "per_sec": 48.4,
+      "frame_shape": [
+        480,
+        270,
+        3
+      ],
+      "cpu_process_pct": 68.0,
+      "cpu_system_pct": 36.4,
+      "cpu_process_pct_at_rate": 24.1,
+      "cpu_system_pct_at_rate": 32.8,
+      "read_hz": 15.0,
+      "scrcpy": {
+        "max_size": 480,
+        "max_fps": 60,
+        "bit_rate": 8000000
+      },
+      "fresh_frames": 175,
+      "n_range": [
+        100,
+        100
+      ],
+      "p50_ms_range": [
+        16.4,
+        26.67
+      ],
+      "p95_ms_range": [
+        32.67,
+        50.81
+      ],
+      "mean_ms_range": [
+        17.93,
+        28.4
+      ],
+      "per_sec_range": [
+        35.2,
+        55.8
+      ],
+      "cpu_process_pct_range": [
+        66.0,
+        69.6
+      ],
+      "cpu_system_pct_range": [
+        32.8,
+        50.3
+      ],
+      "cpu_process_pct_at_rate_range": [
+        13.7,
+        35.3
+      ],
+      "cpu_system_pct_at_rate_range": [
+        24.3,
+        36.3
+      ],
+      "read_hz_range": [
+        15.0,
+        15.0
+      ],
+      "fresh_frames_range": [
+        175,
+        176
+      ],
+      "runs": 3
+    }
+  },
+  "input": {},
+  "machine": {
+    "platform": "Windows-10-10.0.26200-SP0",
+    "processor": "Intel64 Family 6 Model 186 Stepping 2, GenuineIntel"
+  }
+}

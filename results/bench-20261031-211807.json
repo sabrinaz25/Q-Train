@@ -1,0 +1,96 @@
+{
+  "capture": {
+    "dxcam": {
+      "n": 100,
+      "p50_ms": 16.65,
+      "p95_ms": 20.3,
+      "mean_ms": 17.07,
+      "per_sec": 58.6,
+      "frame_shape": [
+        1155,
+        1050,
+        3
+      ],
+      "cpu_process_pct": 197.6,
+      "cpu_system_pct": 37.5,
+      "cpu_process_pct_at_rate": 17.8,
+      "cpu_system_pct_at_rate": 18.2,
+      "read_hz": 15.0,
+      "fresh_frames": 175
+    },
+    "scrcpy@360": {
+      "n": 100,
+      "p50_ms": 17.9,
+      "p95_ms": 43.08,
+      "mean_ms": 22.88,
+      "per_sec": 43.7,
+      "frame_shape": [
+        360,
+        202,
+        3
+      ],
+      "cpu_process_pct": 60.8,
+      "cpu_system_pct": 37.9,
+      "cpu_process_pct_at_rate": 18.4,
+      "cpu_system_pct_at_rate": 29.2,
+      "read_hz": 15.0,
+      "scrcpy": {
+        "max_size": 360,
+        "max_fps": 60,
+        "bit_rate": 8000000
+      },
+      "fresh_frames": 175
+    },
+    "scrcpy@480": {
+      "n": 100,
+      "p50_ms": 19.06,
+      "p95_ms": 52.54,
+      "mean_ms": 24.85,
+      "per_sec": 40.2,
+      "frame_shape": [
+        480,
+        270,
+        3
+      ],
+      "cpu_process_pct": 66.0,
+      "cpu_system_pct": 44.1,
+      "cpu_process_pct_at_rate": 18.4,
+      "cpu_system_pct_at_rate": 27.7,
+      "read_hz": 15.0,
+      "scrcpy": {
+        "max_size": 480,
+        "max_fps": 60,
+        "bit_rate": 8000000
+      },
+      "fresh_frames": 175
+    },
+    "scrcpy@720": {
+      "n": 100,
+      "p50_ms": 16.6,
+      "p95_ms": 28.46,
+      "mean_ms": 17.48,
+      "per_sec": 57.2,
+      "frame_shape": [
+        720,
+        404,
+        3
+      ],
+      "cpu_process_pct": 38.4,
+      "cpu_system_pct": 32.3,
+      "cpu_process_pct_at_rate": 38.7,
+      "cpu_system_pct_at_rate": 51.2,
+      "read_hz": 15.0,
+      "scrcpy": {
+        "max_size": 720,
+        "max_fps": 60,
+        "bit_rate": 8000000
+      },
+      "fresh_frames": 174
+    }
+  },
+  "input": {},
+  "machine": {
+    "platform": "Windows-10-10.0.26200-SP0",
+    "processor": "Intel64 Family 6 Model 186 Stepping 2, GenuineIntel"
+  }
+}

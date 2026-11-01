@@ -1,0 +1,32 @@
+{
+  "capture": {
+    "dxcam": {
+      "error": "ValueError: Invalid Region: Region should be in 3840x2400"
+    },
+    "scrcpy": {
+      "n": 100,
+      "p50_ms": 21.74,
+      "p95_ms": 47.41,
+      "mean_ms": 24.67,
+      "per_sec": 40.5,
+      "frame_shape": [
+        720,
+        404,
+        3
+      ],
+      "cpu_process_pct": 95.6,
+      "cpu_system_pct": 60.0,
+      "scrcpy": {
+        "max_size": 720,
+        "max_fps": 60,
+        "bit_rate": 8000000
+      },
+      "fresh_frames": 101
+    }
+  },
+  "input": {},
+  "machine": {
+    "platform": "Windows-10-10.0.26200-SP0",
+    "processor": "Intel64 Family 6 Model 186 Stepping 2, GenuineIntel"
+  }
+}

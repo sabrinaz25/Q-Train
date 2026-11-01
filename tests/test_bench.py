@@ -17,3 +17,11 @@ def test_markdown_handles_errors_and_skips():
                   "cmd": {"skipped": "needs Android 10+"}},
     })
     assert "960x540" in md and "ImportError" in md and "needs Android 10+" in md
+
+
+def test_combine_runs_takes_medians_and_keeps_ranges():
+    from qtrain.bench import combine_runs
+    runs = [{"p50_ms": v, "frame_shape": [2, 2, 3]} for v in (10.0, 30.0, 12.0)] + [{"error": "boom"}]
+    c = combine_runs(runs)
+    assert c["p50_ms"] == 12.0 and c["p50_ms_range"] == [10.0, 30.0] and c["runs"] == 3
+    assert combine_runs([{"error": "boom"}]) == {"error": "boom"}

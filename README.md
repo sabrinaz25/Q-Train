@@ -88,6 +88,20 @@ Android's pointer-location overlay (12 presses per path, every press confirmed o
 | `mss` (GDI window capture) | 16.9 ms | 58 |
 | **`dxcam`** (Desktop Duplication API, time to a new frame) | **16.7 ms** | **60** (game frame rate) |
 
+### Frame source: desktop capture vs. streaming from the device
+
+Two ways to get frames: copy the emulator window from the desktop (dxcam), or decode the device's
+own screen streamed by scrcpy's server. Same input path (scrcpy injector) for both.
+
+| | dxcam | scrcpy @ 360 px | scrcpy @ 480 px |
+|---|---|---|---|
+| End-to-end latency, p50 / p95 (20 presses) | **63 / 92 ms** | 96 / 142 ms | 95 / 128 ms |
+| Frames/s at full rate (median of 3) | 51 | **59** | 48 |
+| Machine CPU while reading at 15 Hz (median, range of 3) | **27% (25–31)** | 34% (32–35) | 33% (24–36) |
+| Window must be visible and on screen | yes | **no** | **no** |
+| Needs the screen located inside a window | yes | **no** | **no** |
+
+
 ### Hands-free control (random-policy baseline)
 
 | Metric | Value |
@@ -115,6 +129,18 @@ Android's pointer-location overlay (12 presses per path, every press confirmed o
 - **Capture is not the bottleneck.** Both desktop capture backends deliver every frame the game
   renders. dxcam initially reported 0.07 ms per frame because it reuses the previous frame when
   the screen is unchanged; it is now measured as time to a new frame.
+- **Desktop capture is faster; device streaming is more general.** Streaming adds ~33 ms of
+  latency and ~6 points of machine CPU, but works with covered or off-screen windows, many
+  instances and any app. The cause is the emulator: BlueStacks offers only Google's *software*
+  H.264 encoder (`OMX.google.h264.encoder`), so every streamed frame is compressed on the CPU.
+  Resolution doesn't change the latency (360 and 480 px are within noise), so the delay is the
+  fixed encode/buffer pipeline, not pixel count. At 360 px the encoder keeps up with 60 fps; at
+  480 px it starts dropping frames, so 360 px is the default. Both backends are kept: dxcam for a
+  single visible instance where latency matters most, scrcpy for multiple or hidden instances.
+- **Measurement noise is real and now quantified.** Single 5-second CPU measurements of the same
+  configuration varied from 18% to 76%. Capture benchmarks now run in interleaved rounds and
+  report the median with its range, and end-to-end tests discard a warm-up press (the first touch
+  of a session takes 220–470 ms vs. 60–100 ms after).
 - **Resets dominate wall-clock time.** Only 25% of the time is spent playing, mostly because
   the bot waits for the "Continue?" prompt to expire rather than spend in-game currency. This is
   the largest single-instance throughput lever ahead of stage 3.
@@ -132,6 +158,9 @@ before and after.
 | Detecting touches on screen | Pointer-overlay crosshair (under half a pixel once captured) | Overlay's coordinate readout | 0/12 → 12/12 touches detected |
 | Close-button detection | X-shape score after stretching the glyph to a square | Structural check: white centre and arms, red gaps, relative to the button | 2/5 → 6/6 real popups detected; 0 false positives on notification badges |
 | Finding the game in the window | Crop selected by hand, stored as fixed fractions of the window | Automatic detection: strongest 9:16 rectangle of edges, fourth side computed from the shape; re-run when screens go unrecognized | Survives layout changes (an ad panel shifted the game 365 px); exact to the pixel on real captures |
+| Frame decoding cost | Every decoded frame converted to a BGR image (40–60/s) | Frames stay in the decoder's format; only frames actually read are converted (15/s at the control rate) | Conversions cut by ~3–4x by construction; scrcpy capture costs this process ~24% of a core at 15 Hz |
+| Stream resolution | 720 px | 360 px (the pipeline downsizes to 360x640 anyway) | Machine CPU at 15 Hz 43–51% → 28–34% across runs; full 60 fps instead of dropped frames |
+| Cost of finding the game | Full-image running-count tables; every candidate edge as an anchor | Read only the few candidate lines; anchor only on strong edges; uint8 OpenCV differencing | 252 → 84 ms per search (3x), identical results |
 | Tap placement | Screen size and orientation from `dumpsys` | Size read from a screenshot header | Taps landed off target → on target |
 | Unwanted currency spending | Tap away the "Continue?" prompt; swipes at screen centre | No tap (prompt expires); swipes confined to the lower screen | Keys spent per run: >0 → 0 |
 
@@ -165,10 +194,11 @@ python -m qtrain.bench --list-windows
 python -m qtrain.bench --serial 127.0.0.1:5556 --window "BlueStacks App Player 1" --save-frames
 ```
 
-End-to-end input latency (open the game's pause screen first, since it is static):
+End-to-end input latency (open the game's pause screen first, since it is static). Several frame
+sources can be compared in one run:
 
 ```powershell
-python -m qtrain.bench --serial 127.0.0.1:5556 --window "BlueStacks App Player 1" --e2e
+python -m qtrain.bench --serial 127.0.0.1:5556 --window "BlueStacks App Player 1" --e2e --e2e-capture dxcam scrcpy
 ```
 
 | Capture backend | Method |
@@ -176,6 +206,7 @@ python -m qtrain.bench --serial 127.0.0.1:5556 --window "BlueStacks App Player 1
 | `adb` | Device reads back its framebuffer and sends it over ADB |
 | `mss` | GDI capture of the emulator window |
 | `dxcam` | Windows Desktop Duplication API |
+| `scrcpy` | Device's own screen, streamed as H.264 by scrcpy's server and decoded with PyAV; no window needed |
 
 | Input backend | Method |
 |---|---|
@@ -233,8 +264,10 @@ Actions: `0` no-op, `1` left, `2` right, `3` jump, `4` roll. Reward: +0.1 per st
 - **Game area.** The game is found inside the emulator window automatically: the strongest
   rectangle of sharp edges with the game's 9:16 shape. Three sides must be clear edges and the
   fourth is computed from the shape, which copes with game borders that fade into the frame and
-  rejects look-alike lines such as an ad panel's divider. It runs at startup and again whenever
-  screens stop being recognized, so the emulator's layout can change mid-session. The crop is
+  rejects look-alike lines such as an ad panel's divider. Portrait and landscape are both tried
+  (the device's current shape first), so rotating apps work. It runs at startup and again
+  whenever screens stop being recognized, so the emulator's layout can change mid-session. With
+  `scrcpy` capture, frames are the device's own screen and this step is skipped entirely. The crop is
   resized to a fixed 360x640 canonical image; templates and tap points are stored in canonical
   coordinates, so touches are placed by proportion.
 - **Known screens.** Each calibrated screen is recognized by a small template matched near its
@@ -257,7 +290,7 @@ crash penalty arrives slightly after the action that caused it.
 ```
 qtrain/
   adb.py           ADB device connection, swipe geometry, ADB input backends
-  scrcpy_input.py  scrcpy server as an on-device touch injector
+  scrcpy_client.py scrcpy server session: touch input and decoded screen frames
   e2e.py           end-to-end input latency (touch sent to touch visible)
   capture.py       DPI-aware window lookup and capture backends
   bench.py         latency benchmark CLI

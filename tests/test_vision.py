@@ -144,3 +144,18 @@ def test_locate_game_returns_none_without_a_game():
     win = np.zeros((600, 500, 3), np.uint8)
     win[:] = FRAME_BGR
     assert locate_game(win) is None
+
+
+def test_locate_game_handles_landscape_apps():
+    from qtrain.vision import locate_game
+    game = game_image(w=1070, h=602)                              # rotated: 16:9
+    win = emulator_window(game, left=40, top=82, width=1200, height=760)
+    area, _ = locate_game(win)
+    assert round(area.x * 1200) == 40 and abs(area.w * 1200 - 1070) <= 2
+
+
+def test_locate_game_uses_device_shape_when_given():
+    from qtrain.vision import locate_game
+    win = emulator_window(game_image(), left=365, panel=365)
+    assert locate_game(win, aspect=16 / 9) is None                 # told landscape: no such rectangle
+    assert locate_game(win, aspect=9 / 16) is not None

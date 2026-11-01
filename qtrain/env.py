@@ -18,7 +18,7 @@ from gymnasium import spaces
 
 from .capture import make_capture
 from .controller import ACTIONS, ControllerConfig, GameController
-from .scrcpy_input import open_device
+from .scrcpy_client import ScrcpyCapture, ScrcpyDevice, ScrcpySession, open_device
 from .screens import Calibration
 
 
@@ -32,10 +32,17 @@ class SubwaySurfersEnv(gym.Env):
         cfg = config or ControllerConfig()
         self.metadata = {**self.metadata, "render_fps": cfg.hz}
         self.render_mode = render_mode
-        self.device = open_device(serial, input_backend)
+        if capture == "scrcpy" and input_backend in ("auto", "scrcpy"):
+            # one scrcpy server for both: video for frames, control for touches
+            session = ScrcpySession(serial, decode=True, max_size=360, max_fps=60, bit_rate=8_000_000)
+            self.device, self.capture = ScrcpyDevice(session=session), ScrcpyCapture(session=session)
+            self._session = session
+        else:
+            self._session = None
+            self.device = open_device(serial, input_backend)
+            self.capture = make_capture(capture, window=window, serial=serial)
         print(f"[qtrain] {serial}: screen {self.device.width}x{self.device.height}, "
-              f"input backend '{self.device.backend}'")
-        self.capture = make_capture(capture, window=window, serial=serial)
+              f"input '{self.device.backend}', capture '{capture}'")
         self.ctrl = GameController(self.device, self.capture, Calibration.load(calibration_dir), cfg)
         self.observation_space = spaces.Box(0, 255, (cfg.frame_stack, cfg.obs_size, cfg.obs_size), np.uint8)
         self.action_space = spaces.Discrete(len(ACTIONS))
@@ -55,3 +62,5 @@ class SubwaySurfersEnv(gym.Env):
     def close(self):
         self.device.close()
         self.capture.close()
+        if self._session is not None:
+            self._session.close()

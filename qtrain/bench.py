@@ -22,7 +22,7 @@ import numpy as np
 from .adb import BACKENDS as ADB_BACKENDS
 from .adb import AdbDevice, list_devices, supports_cmd_input
 from .capture import CAPTURE_BACKENDS, list_windows, make_capture
-from .scrcpy_input import ScrcpyDevice
+from .scrcpy_client import ScrcpyCapture, ScrcpyDevice, ScrcpySession
 
 INPUT_BACKENDS = (*ADB_BACKENDS, "scrcpy")
 
@@ -44,17 +44,64 @@ def summarize(seconds: list[float]) -> dict:
     }
 
 
+def scrcpy_opts(args, size: int | None = None) -> dict:
+    return {"max_size": size or args.scrcpy_size[0], "max_fps": args.scrcpy_fps,
+            "bit_rate": args.scrcpy_bitrate}
+
+
+class CpuMeter:
+    """CPU use over a block: this process (all threads, incl. video decoding) and the whole machine.
+
+    Machine-wide matters for scrcpy capture: the emulator's video *encoding*
+    happens outside this process.
+    """
+
+    def __enter__(self):
+        try:
+            import psutil
+            self._psutil = psutil
+            psutil.cpu_percent(None)                     # start a measurement window
+        except ImportError:
+            self._psutil = None
+        self._wall, self._cpu = time.perf_counter(), time.process_time()
+        return self
+
+    def __exit__(self, *exc):
+        wall = time.perf_counter() - self._wall
+        self.process_pct = round(100 * (time.process_time() - self._cpu) / wall, 1)   # 100 = one core
+        self.system_pct = round(self._psutil.cpu_percent(None), 1) if self._psutil else None
+
+
 def bench_capture(backend: str, args) -> dict:
-    cap = make_capture(backend, window=args.window, serial=args.serial)
+    """Two phases: (1) read every new frame as fast as possible: latency, frame rate and
+    CPU at full rate; (2) read at the control loop's rate for a few seconds: the CPU cost
+    in real use, where most frames are never read."""
+    backend, _, size = backend.partition("@")                # "scrcpy@480" = scrcpy at 480 px
+    extra = scrcpy_opts(args, int(size) if size else None) if backend == "scrcpy" else {}
+    cap = make_capture(backend, window=args.window, serial=args.serial, **extra)
     try:
         frame = cap.grab()  # warm-up; also checks it works at all
-        grab = getattr(cap, "grab_fresh", cap.grab)  # dxcam: time to a *new* frame
+        grab = getattr(cap, "grab_fresh", cap.grab)  # dxcam/scrcpy: time to a *new* frame
         times = []
-        for _ in range(args.n):
-            t0 = time.perf_counter()
-            frame = grab()
-            times.append(time.perf_counter() - t0)
-        res = summarize(times) | {"frame_shape": list(frame.shape)}
+        with CpuMeter() as cpu:
+            for _ in range(args.n):
+                t0 = time.perf_counter()
+                frame = grab()
+                times.append(time.perf_counter() - t0)
+        res = summarize(times) | {"frame_shape": list(frame.shape), "cpu_process_pct": cpu.process_pct,
+                                  "cpu_system_pct": cpu.system_pct}
+        period = 1.0 / args.read_hz
+        with CpuMeter() as cpu_rt:
+            t_end = time.perf_counter() + args.read_seconds
+            next_t = time.perf_counter()
+            while time.perf_counter() < t_end:
+                cap.grab()
+                next_t += period
+                time.sleep(max(0.0, next_t - time.perf_counter()))
+        res |= {"cpu_process_pct_at_rate": cpu_rt.process_pct, "cpu_system_pct_at_rate": cpu_rt.system_pct,
+                "read_hz": args.read_hz}
+        if extra:
+            res["scrcpy"] = extra
         if hasattr(cap, "fresh"):
             res["fresh_frames"] = cap.fresh
         if args.save_frames:
@@ -62,6 +109,21 @@ def bench_capture(backend: str, args) -> dict:
         return res
     finally:
         cap.close()
+
+
+def combine_runs(runs: list[dict]) -> dict:
+    """Median of every numeric metric across repeated runs, plus each metric's min-max range."""
+    ok = [r for r in runs if "error" not in r]
+    if not ok:
+        return runs[-1]
+    out = dict(ok[-1])
+    for key, value in ok[-1].items():
+        if isinstance(value, (int, float)) and not isinstance(value, bool):
+            vals = [r[key] for r in ok if isinstance(r.get(key), (int, float))]
+            out[key] = round(statistics.median(vals), 2)
+            out[f"{key}_range"] = [min(vals), max(vals)]
+    out["runs"] = len(ok)
+    return out
 
 
 def bench_input(backend: str, args) -> dict:
@@ -100,18 +162,35 @@ def bench_e2e(backend: str, args) -> dict:
     from .screens import CALIBRATION_FILE, Calibration
     from .vision import resolve_game_area
 
-    cal_path = Path("assets") / CALIBRATION_FILE
-    saved = Calibration.load("assets").game_area if cal_path.exists() else None
-    cap = make_capture(args.e2e_capture, window=args.window, serial=args.serial)
-    area, source = resolve_game_area(cap.grab(), saved)
-    print(f"  game area: {source}")
+    capture, backend = backend.split("+") if "+" in backend else (args.e2e_capture[0], backend)
+    capture, _, size = capture.partition("@")
+    size = int(size) if size else None
+    session = dev = cap = None
+    warm: list = []
     try:
-        with open_input(backend, args.serial) as dev:
-            seen = measure(dev, cap, area, args.serial, trials=args.e2e_trials)
+        if capture == "scrcpy" and backend == "scrcpy":     # one server for both, as in real use
+            session = ScrcpySession(args.serial, decode=True, **scrcpy_opts(args, size))
+            dev, cap = ScrcpyDevice(session=session), ScrcpyCapture(session=session)
+        else:
+            extra = scrcpy_opts(args, size) if capture == "scrcpy" else {}
+            cap = make_capture(capture, window=args.window, serial=args.serial, **extra)
+            dev = open_input(backend, args.serial)
+        if getattr(cap, "full_screen", False):
+            area = None
+            print("  frames: device screen (nothing to locate)")
+        else:
+            cal_path = Path("assets") / CALIBRATION_FILE
+            saved = Calibration.load("assets").game_area if cal_path.exists() else None
+            area, source = resolve_game_area(cap.grab(), saved)
+            print(f"  game area: {source}")
+        seen = measure(dev, cap, area, args.serial, trials=args.e2e_trials, warmups=warm)
     finally:
-        cap.close()
+        for thing in (dev, cap, session):
+            if thing is not None:
+                thing.close()
     hits = [t for t in seen if t is not None]
-    res = {"trials": len(seen), "seen": len(hits)}
+    res = {"trials": len(seen), "seen": len(hits),
+           "warmup_ms": [round(t * 1000, 1) if t else None for t in warm]}
     if hits:
         res |= summarize(hits)
     return res
@@ -119,7 +198,7 @@ def bench_e2e(backend: str, args) -> dict:
 
 def e2e_markdown(results: dict) -> str:
     lines = ["**End-to-end input latency** (touch sent -> visible in captured frames)", "",
-             "| backend | p50 | p95 | registered |", "|---|---|---|---|"]
+             "| capture + input | p50 | p95 | registered |", "|---|---|---|---|"]
     for name, r in results.items():
         if "error" in r:
             lines.append(f"| {name} | – | – | {r['error']} |")
@@ -130,15 +209,31 @@ def e2e_markdown(results: dict) -> str:
     return "\n".join(lines)
 
 
+def _cell(r: dict, key: str, unit: str) -> str:
+    """'median' or, after repeated runs, 'median (min-max)'."""
+    v = r.get(key)
+    if v is None:
+        return "n/a"
+    rng = r.get(f"{key}_range")
+    if rng and rng[0] != rng[1]:
+        return f"{v}{unit} ({rng[0]:g}-{rng[1]:g})"
+    return f"{v}{unit}"
+
+
 def to_markdown(results: dict) -> str:
     lines = ["**Frame capture** (ms per frame)", "",
-             "| backend | p50 | p95 | frames/s | frame |", "|---|---|---|---|---|"]
+             "| backend | p50 | p95 | frames/s | frame | CPU, this process | CPU, machine "
+             "| at control rate: this process | machine |",
+             "|---|---|---|---|---|---|---|---|---|"]
     for name, r in results["capture"].items():
         if "error" in r:
-            lines.append(f"| {name} | – | – | – | {r['error']} |")
+            lines.append(f"| {name} | – | – | – | {r['error']} | – | – | – | – |")
         else:
             shape = "x".join(map(str, r["frame_shape"][:2]))
-            lines.append(f"| {name} | {r['p50_ms']} | {r['p95_ms']} | {r['per_sec']} | {shape} |")
+            cells = [_cell(r, k, unit) for k, unit in (
+                ("p50_ms", ""), ("p95_ms", ""), ("per_sec", ""))] + [shape] + [_cell(r, k, "%") for k in (
+                "cpu_process_pct", "cpu_system_pct", "cpu_process_pct_at_rate", "cpu_system_pct_at_rate")]
+            lines.append(f"| {name} | " + " | ".join(cells) + " |")
     lines += ["", "**Input** (ms per swipe)", "",
               "| backend | round-trip p50 | round-trip p95 | host-side p50 |", "|---|---|---|---|"]
     for name, r in results["input"].items():
@@ -160,7 +255,16 @@ def main(argv=None) -> None:
     p.add_argument("--e2e", action="store_true",
                    help="measure input -> visible-on-screen latency instead (run on the pause screen)")
     p.add_argument("--e2e-trials", type=int, default=12)
-    p.add_argument("--e2e-capture", default="dxcam", choices=["dxcam", "mss"])
+    p.add_argument("--e2e-capture", nargs="+", default=["dxcam"], choices=["dxcam", "mss", "scrcpy"],
+                   help="frame source(s) for --e2e; several are compared in one run")
+    p.add_argument("--scrcpy-size", type=int, nargs="+", default=[360],
+                   help="scrcpy capture: longest side in pixels; several values are compared")
+    p.add_argument("--read-hz", type=float, default=15.0, help="control rate for the realistic CPU phase")
+    p.add_argument("--read-seconds", type=float, default=5.0)
+    p.add_argument("--repeat", type=int, default=1,
+                   help="repeat the capture benchmark; tables show medians, JSON keeps ranges")
+    p.add_argument("--scrcpy-fps", type=int, default=60)
+    p.add_argument("--scrcpy-bitrate", type=int, default=8_000_000)
     p.add_argument("-n", type=int, default=100, help="samples per capture backend")
     p.add_argument("--save-frames", action="store_true", help="write one sample frame per backend to data/")
     p.add_argument("--list-windows", action="store_true")
@@ -176,7 +280,10 @@ def main(argv=None) -> None:
         return
 
     if args.e2e:
-        backends = args.input if args.input is not None else ["shell", "scrcpy"]
+        inputs = args.input if args.input is not None else ["shell", "scrcpy"]
+        caps = [x for c in args.e2e_capture
+                for x in ([f"scrcpy@{s}" for s in args.scrcpy_size] if c == "scrcpy" else [c])]
+        backends = [f"{c}+{i}" for c in caps for i in inputs]    # every capture x input pair
         e2e = {}
         for b in backends:
             print(f"e2e: {b} ...", flush=True)
@@ -195,12 +302,21 @@ def main(argv=None) -> None:
 
     results = {"capture": {}, "input": {},
                "machine": {"platform": platform.platform(), "processor": platform.processor()}}
-    for b in args.capture:
-        print(f"capture: {b} ...", flush=True)
-        try:
-            results["capture"][b] = bench_capture(b, args)
-        except Exception as e:  # report and keep going; one broken backend shouldn't hide the rest
-            results["capture"][b] = {"error": f"{type(e).__name__}: {e}"}
+    captures: list[str] = []
+    for c in args.capture:                     # one scrcpy entry per requested size
+        captures += [f"scrcpy@{size}" for size in args.scrcpy_size] if c == "scrcpy" else [c]
+    runs: dict[str, list[dict]] = {b: [] for b in captures}
+    for r in range(args.repeat):
+        # Interleave backends round by round, so slow drift (heat, background load)
+        # spreads across all of them instead of penalising whichever ran last.
+        for b in captures:
+            print(f"capture: {b} (round {r + 1}/{args.repeat}) ...", flush=True)
+            try:
+                runs[b].append(bench_capture(b, args))
+            except Exception as e:  # report and keep going; one broken backend shouldn't hide the rest
+                runs[b].append({"error": f"{type(e).__name__}: {e}"})
+    for b, rs in runs.items():
+        results["capture"][b] = combine_runs(rs)
     for b in args.input:
         print(f"input: {b} ...", flush=True)
         try:
