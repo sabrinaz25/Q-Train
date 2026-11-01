@@ -1,4 +1,6 @@
 """Drives GameController against a scripted fake game, no emulator needed."""
+import tempfile
+
 import cv2
 import numpy as np
 import pytest
@@ -102,6 +104,7 @@ class FakeGame:
 
 
 def make(start="menu", crash_after=20, **cfg):
+    cfg.setdefault("debug_dir", tempfile.mkdtemp())     # never write into the project's data/
     game, clock = FakeGame(start, crash_after), FakeClock()
     ctrl = GameController(game, game, calibration(), ControllerConfig(**cfg), clock=clock, sleep=clock.sleep)
     return ctrl, game, clock
@@ -216,3 +219,108 @@ def test_device_frames_skip_screen_location():
     assert ctrl.stats["relocate_failed"] == 0
     _, info = ctrl.reset()
     assert info["screens"] == ["menu", "playing"]
+
+
+def test_stuck_reset_restarts_the_app_once():
+    game, clock = FakeGame("mystery"), FakeClock()     # a screen that Back can't leave...
+    game.back = lambda: setattr(game, "backs", game.backs + 1)
+    restarts = []
+
+    def restart():                                      # ...but relaunching the app can
+        restarts.append(clock.t)
+        game.screen = "menu"
+
+    ctrl = GameController(game, game, calibration(),
+                          ControllerConfig(restart_after=20, reset_timeout=90, back_after_unknown=8,
+                                           debug_dir=tempfile.mkdtemp()),
+                          clock=clock, sleep=clock.sleep, restart_app=restart)
+    _, info = ctrl.reset()
+    assert len(restarts) == 1 and restarts[0] >= 20
+    assert info["screens"] == ["unknown", "RESTART", "menu", "playing"]
+    assert ctrl.stats["app_restarts"] == 1 and game.backs >= 1      # Back was tried first
+
+
+def test_reset_gives_up_after_one_restart(tmp_path):
+    game, clock = FakeGame("mystery"), FakeClock()
+    game.back = lambda: None
+    calls = []
+    ctrl = GameController(game, game, calibration(),
+                          ControllerConfig(restart_after=10, reset_timeout=30, debug_dir=str(tmp_path)),
+                          clock=clock, sleep=clock.sleep, restart_app=lambda: calls.append(1))
+    with pytest.raises(TimeoutError):
+        ctrl.reset()
+    assert len(calls) == 1                                          # never restarts in a loop
+
+
+def test_screen_with_back_key_is_left_with_back_not_a_tap():
+    cal = calibration()
+    for t in cal.templates:
+        if t.name == "save_me":
+            t.tap, t.key = None, "back"
+    game, clock = FakeGame("save_me"), FakeClock()
+
+    def back():
+        game.backs += 1
+        if game.screen == "save_me":          # like the real game: Back skips "Continue?" for free
+            game.screen = "game_over"
+    game.back = back
+    ctrl = GameController(game, game, cal, ControllerConfig(), clock=clock, sleep=clock.sleep)
+    _, info = ctrl.reset()
+    assert info["screens"] == ["save_me", "game_over", "menu", "playing"]
+    assert ctrl.stats["back:save_me"] == 1 and not any(s == "save_me" for s, *_ in game.taps)
+
+
+SCREENS["over_popup"] = label(SCREENS["game_over"], "AD", (40, 520))   # popup drawn over the score screen
+
+
+class PopupOverScoreGame(FakeGame):
+    """A popup sits on top of the score screen: its template still matches, but taps hit the popup."""
+
+    def tap(self, x, y):
+        if self.screen == "over_popup":
+            self.taps.append((self.screen, x, y))            # swallowed by the popup
+            return
+        super().tap(x, y)
+
+    def back(self):
+        self.backs += 1
+        if self.screen == "over_popup":
+            self.screen = "game_over"
+
+
+def test_taps_that_stop_working_escalate_to_back():
+    game, clock = PopupOverScoreGame("over_popup"), FakeClock()
+    ctrl = GameController(game, game, calibration(), ControllerConfig(debug_dir=tempfile.mkdtemp()),
+                          clock=clock, sleep=clock.sleep)
+    _, info = ctrl.reset()
+    assert ctrl.stats["stuck"] == 1 and ctrl.stats["stuck:back"] == 1
+    assert sum(1 for s, *_ in game.taps if s == "over_popup") == ctrl.cfg.stuck_taps
+    assert game.screen == "playing" and clock.t < 15        # recovered in seconds, not a 45 s restart
+
+
+def test_slow_crash_animation_still_counts_as_a_crash():
+    ctrl, game, clock = make(crash_after=10**9, hz=10)
+    ctrl.reset()
+    game.screen = "mystery"                                  # HUD gone: crash animation playing
+    for _ in range(30):                                      # 3 s at 10 Hz, under lost_after (6 s)
+        *_, term, trunc, _ = ctrl.step(0)
+        assert not term and not trunc
+    game.screen = "save_me"
+    *_, term, trunc, info = ctrl.step(0)
+    assert term and not trunc
+    assert info["crash_delay_s"] == pytest.approx(3.0, abs=0.15)
+    assert ctrl.crash_delays == [info["crash_delay_s"]]
+
+
+def test_popup_back_cannot_close_triggers_early_restart():
+    game, clock = PopupOverScoreGame("over_popup"), FakeClock()
+    game.back = lambda: setattr(game, "backs", game.backs + 1)      # Back does nothing to this popup
+
+    def restart():
+        game.screen = "menu"
+    ctrl = GameController(game, game, calibration(), ControllerConfig(debug_dir=tempfile.mkdtemp()),
+                          clock=clock, sleep=clock.sleep, restart_app=restart)
+    _, info = ctrl.reset()
+    assert ctrl.stats["stuck"] == 2 and ctrl.stats["app_restarts"] == 1
+    assert clock.t < ctrl.cfg.restart_after                          # didn't wait the full 45 s
+    assert "RESTART" in info["screens"] and game.screen == "playing"

@@ -1,0 +1,93 @@
+{
+  "args": {
+    "serial": "127.0.0.1:5555",
+    "window": "BlueStacks App Player 1",
+    "episodes": 3,
+    "minutes": null,
+    "policy": "random",
+    "hz": 15.0,
+    "capture": "dxcam",
+    "seed": 0,
+    "input": "auto",
+    "app_package": "com.kiloo.subwaysurf"
+  },
+  "summary": {
+    "episodes_attempted": 3,
+    "episodes_completed": 3,
+    "failures": 0,
+    "success_rate_pct": 100.0,
+    "wall_minutes": 0.3,
+    "reset_seconds_p50": 5.0,
+    "reset_seconds_p95": 5.01,
+    "reset_seconds_max": 5.01,
+    "mean_steps": 41.7,
+    "mean_achieved_hz": 14.9,
+    "time_playing_pct": 40.4,
+    "steps_per_hour": 21714,
+    "recoveries": {
+      "tap:red_x": 0,
+      "relocated": 0,
+      "back": 0,
+      "app_restarts": 0,
+      "lost_track": 1
+    },
+    "recoveries_per_hour": 173.7,
+    "failure_reasons": [],
+    "controller_stats": {
+      "back:save_me": 7,
+      "unknown": 2,
+      "tap:menu": 1,
+      "episodes": 3,
+      "tap:game_over": 6,
+      "lost_track": 1
+    }
+  },
+  "episodes": [
+    {
+      "episode": 1,
+      "steps": 39,
+      "return": 2.8,
+      "play_seconds": 2.61,
+      "achieved_hz": 14.9,
+      "reset_seconds": 2.24,
+      "screens": [
+        "save_me",
+        "unknown",
+        "menu",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false
+    },
+    {
+      "episode": 2,
+      "steps": 40,
+      "return": 2.9,
+      "play_seconds": 2.68,
+      "achieved_hz": 14.9,
+      "reset_seconds": 5.0,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "save_me",
+      "truncated": false
+    },
+    {
+      "episode": 3,
+      "steps": 46,
+      "return": 4.6,
+      "play_seconds": 3.08,
+      "achieved_hz": 14.9,
+      "reset_seconds": 5.01,
+      "screens": [
+        "save_me",
+        "game_over",
+        "playing"
+      ],
+      "ended_on": "unknown",
+      "truncated": true
+    }
+  ]
+}

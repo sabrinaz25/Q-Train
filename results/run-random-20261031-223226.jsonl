@@ -1,0 +1,3 @@
+{"episode": 1, "steps": 39, "return": 2.8, "play_seconds": 2.61, "achieved_hz": 14.9, "reset_seconds": 2.24, "screens": ["save_me", "unknown", "menu", "playing"], "ended_on": "save_me", "truncated": false}
+{"episode": 2, "steps": 40, "return": 2.9, "play_seconds": 2.68, "achieved_hz": 14.9, "reset_seconds": 5.0, "screens": ["save_me", "game_over", "playing"], "ended_on": "save_me", "truncated": false}
+{"episode": 3, "steps": 46, "return": 4.6, "play_seconds": 3.08, "achieved_hz": 14.9, "reset_seconds": 5.01, "screens": ["save_me", "game_over", "playing"], "ended_on": "unknown", "truncated": true}

@@ -16,6 +16,7 @@ import gymnasium as gym
 import numpy as np
 from gymnasium import spaces
 
+from .adb import restart_app
 from .capture import make_capture
 from .controller import ACTIONS, ControllerConfig, GameController
 from .scrcpy_client import ScrcpyCapture, ScrcpyDevice, ScrcpySession, open_device
@@ -28,7 +29,7 @@ class SubwaySurfersEnv(gym.Env):
     def __init__(self, serial: str = "127.0.0.1:5556", window: str = "BlueStacks App Player",
                  calibration_dir: str = "assets", capture: str = "dxcam",
                  config: ControllerConfig | None = None, render_mode: str | None = None,
-                 input_backend: str = "auto"):
+                 input_backend: str = "auto", app_package: str | None = "com.kiloo.subwaysurf"):
         cfg = config or ControllerConfig()
         self.metadata = {**self.metadata, "render_fps": cfg.hz}
         self.render_mode = render_mode
@@ -43,7 +44,9 @@ class SubwaySurfersEnv(gym.Env):
             self.capture = make_capture(capture, window=window, serial=serial)
         print(f"[qtrain] {serial}: screen {self.device.width}x{self.device.height}, "
               f"input '{self.device.backend}', capture '{capture}'")
-        self.ctrl = GameController(self.device, self.capture, Calibration.load(calibration_dir), cfg)
+        restart = (lambda: restart_app(serial, app_package)) if app_package else None
+        self.ctrl = GameController(self.device, self.capture, Calibration.load(calibration_dir), cfg,
+                                   restart_app=restart)
         self.observation_space = spaces.Box(0, 255, (cfg.frame_stack, cfg.obs_size, cfg.obs_size), np.uint8)
         self.action_space = spaces.Discrete(len(ACTIONS))
 

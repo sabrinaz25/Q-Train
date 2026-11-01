@@ -1,0 +1,77 @@
+{
+  "capture": {
+    "scrcpy@360": {
+      "n": 100,
+      "p50_ms": 17.41,
+      "p95_ms": 48.43,
+      "mean_ms": 21.97,
+      "per_sec": 45.5,
+      "frame_shape": [
+        360,
+        202,
+        3
+      ],
+      "cpu_process_pct": 60.4,
+      "cpu_system_pct": 39.2,
+      "cpu_process_pct_at_rate": 16.2,
+      "cpu_system_pct_at_rate": 25.0,
+      "read_hz": 15.0,
+      "scrcpy": {
+        "max_size": 360,
+        "max_fps": 60,
+        "bit_rate": 2000000
+      },
+      "fresh_frames": 173,
+      "n_range": [
+        100,
+        100
+      ],
+      "p50_ms_range": [
+        15.93,
+        23.15
+      ],
+      "p95_ms_range": [
+        33.18,
+        53.16
+      ],
+      "mean_ms_range": [
+        17.22,
+        26.18
+      ],
+      "per_sec_range": [
+        38.2,
+        58.1
+      ],
+      "cpu_process_pct_range": [
+        47.2,
+        71.6
+      ],
+      "cpu_system_pct_range": [
+        26.6,
+        45.5
+      ],
+      "cpu_process_pct_at_rate_range": [
+        15.3,
+        22.2
+      ],
+      "cpu_system_pct_at_rate_range": [
+        20.8,
+        31.9
+      ],
+      "read_hz_range": [
+        15.0,
+        15.0
+      ],
+      "fresh_frames_range": [
+        167,
+        175
+      ],
+      "runs": 3
+    }
+  },
+  "input": {},
+  "machine": {
+    "platform": "Windows-10-10.0.26200-SP0",
+    "processor": "Intel64 Family 6 Model 186 Stepping 2, GenuineIntel"
+  }
+}

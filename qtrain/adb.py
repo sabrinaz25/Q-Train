@@ -72,6 +72,12 @@ def best_backend(serial: str) -> str:
     return "cmd" if supports_cmd_input(serial) else "shell"
 
 
+def restart_app(serial: str, package: str) -> None:
+    """Force-stop an app and launch it again from its launcher entry (last-resort recovery)."""
+    run_adb("shell", "am", "force-stop", package, serial=serial)
+    run_adb("shell", "monkey", "-p", package, "-c", "android.intent.category.LAUNCHER", "1", serial=serial)
+
+
 def list_devices() -> list[str]:
     lines = run_adb("devices").strip().splitlines()[1:]
     return [ln.split()[0] for ln in lines if ln.strip().endswith("device")]

@@ -76,3 +76,14 @@ def test_calibration_round_trip(tmp_path):
 def test_rejects_bad_role():
     with pytest.raises(ValueError):
         ScreenTemplate("x", "celebrate", (0, 0, 1, 1))
+
+
+def test_back_key_round_trips_and_is_validated(tmp_path):
+    t = template_from(MENU, "menu", "start", (90, 545, 140, 50))
+    t.key = "back"
+    Calibration(GameArea(0, 0, 1, 1), [t]).save(tmp_path)
+    loaded = Calibration.load(tmp_path).templates[0]
+    assert loaded.key == "back" and loaded.tap is None
+    assert ScreenClassifier([loaded], detect_red_x=False).classify(MENU).key == "back"
+    with pytest.raises(ValueError):
+        ScreenTemplate("x", "dismiss", (0, 0, 1, 1), key="home")

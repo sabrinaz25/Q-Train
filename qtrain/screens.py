@@ -27,6 +27,7 @@ import numpy as np
 from .vision import GameArea, find_red_xs
 
 ROLES = ("start", "playing", "crash", "dismiss")
+KEYS = (None, "back")
 CALIBRATION_FILE = "calibration.json"
 
 
@@ -38,10 +39,13 @@ class ScreenTemplate:
     tap: tuple[int, int] | None = None      # where to tap to leave this screen (canonical)
     threshold: float = 0.8
     image: np.ndarray | None = field(default=None, repr=False)  # grayscale patch
+    key: str | None = None                  # "back": press Android Back to leave (instead of a tap)
 
     def __post_init__(self):
         if self.role not in ROLES:
             raise ValueError(f"role must be one of {ROLES}, got {self.role!r}")
+        if self.key not in KEYS:
+            raise ValueError(f"key must be one of {KEYS}, got {self.key!r}")
         self.roi = tuple(int(v) for v in self.roi)
         self.tap = tuple(int(v) for v in self.tap) if self.tap is not None else None
 
@@ -58,7 +62,8 @@ class Calibration:
         for t in self.templates:
             cv2.imwrite(str(d / "templates" / f"{t.name}.png"), t.image)
             meta["templates"].append({"name": t.name, "role": t.role, "roi": list(t.roi),
-                                      "tap": list(t.tap) if t.tap else None, "threshold": t.threshold})
+                                      "tap": list(t.tap) if t.tap else None, "threshold": t.threshold,
+                                      "key": t.key})
         path = d / CALIBRATION_FILE
         path.write_text(json.dumps(meta, indent=2))
         return path
@@ -77,7 +82,7 @@ class Calibration:
                 raise FileNotFoundError(f"template image for {m['name']!r} is missing")
             templates.append(ScreenTemplate(m["name"], m["role"], tuple(m["roi"]),
                                             tuple(m["tap"]) if m["tap"] else None,
-                                            m.get("threshold", 0.8), img))
+                                            m.get("threshold", 0.8), img, m.get("key")))
         return cls(GameArea(**meta["game_area"]), templates)
 
 
@@ -92,6 +97,7 @@ class Detection:
     role: str             # one of ROLES, or "unknown"
     score: float
     tap: tuple[int, int] | None = None
+    key: str | None = None
 
 
 UNKNOWN = Detection("unknown", "unknown", 0.0)
@@ -136,7 +142,7 @@ class ScreenClassifier:
         for t in self.templates:
             s = self.score(gray, t)
             if s >= t.threshold and (best is None or s > best.score):
-                best = Detection(t.name, t.role, round(s, 3), t.tap)
+                best = Detection(t.name, t.role, round(s, 3), t.tap, t.key)
         if best is not None:
             return best
         if self.detect_red_x:

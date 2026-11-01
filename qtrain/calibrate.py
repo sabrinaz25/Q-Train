@@ -53,8 +53,8 @@ STANDARD = [
                "the 'SAVE ME' prompt that appears right after you crash (it only lasts a few seconds; "
                "use a delay)",
                "the 'Save me' heading or the key button",
-               "an EMPTY area away from the Save Me button, so no keys get spent "
-               "(or Esc to just let it time out)"),
+               "press B: Android Back skips this prompt without spending keys "
+               "(measured; or Esc to let it time out)"),
     ScreenSpec("game_over", "crash",
                "the SCORE screen that appears after a run ends",
                "a heading or button that only this screen has",
@@ -70,8 +70,9 @@ def select_box(img: np.ndarray, title: str) -> tuple[int, int, int, int] | None:
     return None if w == 0 or h == 0 else (int(x), int(y), int(w), int(h))
 
 
-def pick_point(img: np.ndarray, title: str) -> tuple[int, int] | None:
-    print("   (click a point, then Enter to confirm; Esc for no tap)")
+def pick_point(img: np.ndarray, title: str) -> tuple[int, int] | str | None:
+    """A clicked point; "back" if B is pressed (leave the screen with Android Back); None for Esc."""
+    print("   (click a point, then Enter to confirm; B = press Back instead; Esc = do nothing)")
     state: dict = {"pt": None}
 
     def on_mouse(event, x, y, _flags, _param):
@@ -91,6 +92,9 @@ def pick_point(img: np.ndarray, title: str) -> tuple[int, int] | None:
             break
         if key == 27:
             state["pt"] = None
+            break
+        if key in (ord("b"), ord("B")):
+            state["pt"] = "back"
             break
     cv2.destroyWindow(title)
     return state["pt"]
@@ -210,10 +214,13 @@ def main(argv=None) -> None:
                 print("   that region is nearly blank, so it can't identify the screen; "
                       f"skipped (redo with --only {spec.name})")
                 continue
+            key = "back" if tap == "back" else None
+            tap = None if key else tap
             templates[spec.name] = ScreenTemplate(spec.name, spec.role, box, tap,
-                                                  image=gray[y:y + h, x:x + w].copy())
+                                                  image=gray[y:y + h, x:x + w].copy(), key=key)
             cv2.imwrite(str(snap_dir / f"{spec.name}.png"), canon)
-            print(f"   saved '{spec.name}' ({spec.role}" + (f", tap at {tap})" if tap else ", no tap)"))
+            how = "press Back" if key else (f"tap at {tap}" if tap else "no tap")
+            print(f"   saved '{spec.name}' ({spec.role}, {how})")
 
         cal = Calibration(area, list(templates.values()))
         path = cal.save(root)

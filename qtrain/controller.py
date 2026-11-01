@@ -26,7 +26,7 @@ import cv2
 import numpy as np
 
 from .screens import Calibration, Detection, ScreenClassifier
-from .vision import CANON_H, CANON_W, canonicalize, locate_game, to_obs
+from .vision import CANON_H, CANON_W, canonicalize, find_red_xs, locate_game, to_obs
 
 ACTIONS = ("noop", "left", "right", "up", "down")   # up = jump, down = roll
 
@@ -51,19 +51,24 @@ class ControllerConfig:
     obs_size: int = 84
     alive_reward: float = 0.1
     crash_penalty: float = -1.0
-    lost_after: float = 2.0          # s of unrecognised screens mid-run before giving up on the episode
+    lost_after: float = 6.0          # s of unrecognised screens mid-run before giving up on the episode
+                                     # (crash animations hide the HUD for up to ~3 s before "Continue?")
     max_steps: int | None = None
     reset_timeout: float = 90.0
     settle: float = 0.8              # s to wait after tapping through a screen
     poll: float = 0.25               # s between checks while waiting
     back_after_unknown: int = 12     # press Android Back after this many unknown screens in a row
+    restart_after: float = 45.0      # s into a reset that hasn't reached a run: restart the app (once)
+    stuck_taps: int = 3              # same screen after this many taps: the tap isn't working
     debug_dir: str = "data/debug"
 
 
 class GameController:
     def __init__(self, device: Device, capture: FrameSource, calibration: Calibration,
-                 config: ControllerConfig | None = None, clock=time.perf_counter, sleep=time.sleep):
+                 config: ControllerConfig | None = None, clock=time.perf_counter, sleep=time.sleep,
+                 restart_app=None):
         self.dev = device
+        self.restart_app = restart_app   # callable that relaunches the app, or None
         self.cap = capture
         self.area = calibration.game_area
         self.classifier = ScreenClassifier(calibration.templates)
@@ -76,6 +81,7 @@ class GameController:
         self._steps = 0
         self._tick = 0.0
         self._lost_since: float | None = None
+        self.crash_delays: list[float] = []   # s from the HUD vanishing to the crash screen
         self.relocate()
 
     # ------------------------------------------------------------- helpers
@@ -123,13 +129,44 @@ class GameController:
         cv2.imwrite(str(path), self.last_canon)
         return path
 
+    def _unstick(self, screen: str) -> None:
+        """Taps on `screen` stopped working: close a popup if one is visible, else press Back."""
+        self.stats["stuck"] += 1
+        if self.stats["stuck"] <= 5:
+            self._save_debug(f"stuck-{screen}")
+        xs = find_red_xs(self.last_canon) if self.last_canon is not None else []
+        if xs:
+            self.dev.tap(*self.to_device(xs[0].center))
+            self.stats["stuck:red_x"] += 1
+        else:
+            self.dev.back()
+            self.stats["stuck:back"] += 1
+
     # --------------------------------------------------------------- reset
     def reset(self) -> tuple[np.ndarray, dict]:
+        """Get from whatever is on screen into a run.
+
+        Recovery escalates: wait through transitions -> tap through known screens and
+        popups -> re-find the game (layout changed) -> Android Back -> restart the app
+        (once, after `restart_after` s) -> give up with a saved frame.
+        """
         cfg = self.cfg
         t0 = self.clock()
         unknown = 0
+        restarted = False
+        last_tapped, same_taps, unsticks = None, 0, 0
         path: list[str] = []
         while True:
+            # restart after `restart_after` s, or sooner once cheaper unsticking has failed twice
+            if (not restarted and self.restart_app is not None
+                    and (self.clock() - t0 > cfg.restart_after or unsticks >= 2)):
+                self._save_debug("before-restart")
+                self.restart_app()
+                self.stats["app_restarts"] += 1
+                restarted = True
+                path.append("RESTART")
+                self.sleep(cfg.settle * 5)          # app launch takes a few seconds
+                continue
             if self.clock() - t0 > cfg.reset_timeout:
                 dbg = self._save_debug("reset-timeout")
                 raise TimeoutError(f"could not get into a run within {cfg.reset_timeout:.0f}s "
@@ -150,7 +187,21 @@ class GameController:
                 self.sleep(cfg.poll)
                 continue
             unknown = 0
-            if det.tap is not None:
+            if det.key == "back":
+                self.dev.back()
+                self.stats[f"back:{det.name}"] += 1
+                self.sleep(cfg.settle)
+            elif det.tap is not None:
+                same_taps = same_taps + 1 if det.name == last_tapped else 1
+                last_tapped = det.name
+                if same_taps > cfg.stuck_taps:
+                    # Still on the same screen after several taps: something is covering the
+                    # button (e.g. a popup over a screen whose template still matches).
+                    self._unstick(det.name)
+                    unsticks += 1
+                    same_taps = 0
+                    self.sleep(cfg.settle)
+                    continue
                 self.dev.tap(*self.to_device(det.tap))
                 self.stats[f"tap:{det.name}"] += 1
                 self.sleep(cfg.settle)
@@ -187,6 +238,12 @@ class GameController:
         terminated = det.role == "crash"
         truncated = False
         now = self.clock()
+        info = {"screen": det.name, "match": det.score}
+        if terminated and self._lost_since is not None:
+            # how long the crash took to show up as a crash screen: the reward delay
+            delay = round(now - self._lost_since, 3)
+            self.crash_delays.append(delay)
+            info["crash_delay_s"] = delay
         if det.role in ("playing", "crash"):
             self._lost_since = None
         else:
@@ -195,7 +252,9 @@ class GameController:
             if now - self._lost_since >= cfg.lost_after:
                 truncated = True
                 self.stats["lost_track"] += 1
+                if self.stats["lost_track"] <= 5:      # keep evidence, but don't fill the disk
+                    self._save_debug(f"lost-track-{self.stats['lost_track']}")
         if cfg.max_steps is not None and self._steps >= cfg.max_steps:
             truncated = True
         reward = cfg.crash_penalty if terminated else cfg.alive_reward
-        return self._obs(), reward, terminated, truncated, {"screen": det.name, "match": det.score}
+        return self._obs(), reward, terminated, truncated, info

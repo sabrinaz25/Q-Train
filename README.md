@@ -59,7 +59,7 @@ Each milestone is defined by the numbers it must produce.
 |---|---|---|---|
 | 1 | Low-latency I/O | Complete | End-to-end input latency 69 ms p50; capture 60 fps |
 | 2 | Hands-free control | Complete | 15 Hz control rate; automatic resets and popup handling |
-| 3 | Reliability | Next | Reset time (baseline 7.4 s); unattended success rate over 50+ episodes; recoveries per hour |
+| 3 | Reliability | In progress | Reset time 7.4 → 4.97 s; 49/50 unattended in the first soak test; next: a clean 100+ episode run |
 | 4 | App explorer | Planned | Unique screens reached per hour vs. Android's `monkey` tester; crashes found |
 | 5 | Parallel workers | Planned | Throughput vs. number of instances; recovery time after injected faults |
 | 6 | Observability | Planned | Per-stage latency breakdown (capture, recognition, decision, touch), p50/p95 |
@@ -102,14 +102,16 @@ own screen streamed by scrcpy's server. Same input path (scrcpy injector) for bo
 | Needs the screen located inside a window | yes | **no** | **no** |
 
 
-### Hands-free control (random-policy baseline)
+### Hands-free control: 50-episode soak test (random policy)
 
-| Metric | Value |
-|---|---|
-| Control rate achieved | 15.0 Hz (target 15 Hz) |
-| Mean reset time (crash to next run) | 7.4 s |
-| Share of wall-clock time spent playing | 25% |
-| Throughput, one instance | ~13,500 environment steps/hour |
+| Metric | Before (Oct 25) | Now (Oct 31, 50 episodes, 7 min) |
+|---|---|---|
+| Control rate achieved | 15.0 Hz | 14.9 Hz, steady across all episodes |
+| Reset time (crash to next run) | 7.4 s mean | **4.97 s p50, 6.07 s p95** |
+| Share of wall-clock time spent playing | 25% | **40%** |
+| Throughput, one instance | ~13,500 steps/hour | **~21,500 steps/hour (+59%)** |
+| Episodes completed without help | n/a | 49/50 (one manual popup dismissal; see findings) |
+| In-game currency spent | 0 | 0 |
 
 ### Findings
 
@@ -141,9 +143,17 @@ own screen streamed by scrcpy's server. Same input path (scrcpy injector) for bo
   configuration varied from 18% to 76%. Capture benchmarks now run in interleaved rounds and
   report the median with its range, and end-to-end tests discard a warm-up press (the first touch
   of a session takes 220–470 ms vs. 60–100 ms after).
-- **Resets dominate wall-clock time.** Only 25% of the time is spent playing, mostly because
-  the bot waits for the "Continue?" prompt to expire rather than spend in-game currency. This is
-  the largest single-instance throughput lever ahead of stage 3.
+- **Resets dominated wall-clock time; one experiment cut them by a third.** Only 25% of the time
+  was spent playing, mostly waiting ~10 s for the "Continue?" prompt to expire rather than spend
+  in-game currency. Android Back turned out to dismiss it for free, so "press Back" became a
+  first-class screen action: resets fell from 7.4 s to 5.0 s and throughput rose 59%.
+- **The soak test found the failure modes a short run can't.** One episode needed a manual
+  popup dismissal: the popup sat on top of the score screen, the score screen's template still
+  matched, so the bot kept tapping a button the popup covered and never thought it was stuck.
+  The controller now detects taps that stop working (same screen after three taps) and escalates
+  to closing a popup or pressing Back. A second episode was filed as "lost track"; its saved frame
+  showed a crash animation that hid the HUD for over 2 s before "Continue?" appeared, so crashes
+  now get 6 s and the HUD-to-crash-screen delay is measured as a metric.
 
 ## Optimization log
 
@@ -162,6 +172,8 @@ before and after.
 | Stream resolution | 720 px | 360 px (the pipeline downsizes to 360x640 anyway) | Machine CPU at 15 Hz 43–51% → 28–34% across runs; full 60 fps instead of dropped frames |
 | Cost of finding the game | Full-image running-count tables; every candidate edge as an anchor | Read only the few candidate lines; anchor only on strong edges; uint8 OpenCV differencing | 252 → 84 ms per search (3x), identical results |
 | Tap placement | Screen size and orientation from `dumpsys` | Size read from a screenshot header | Taps landed off target → on target |
+| Reset time | Wait ~10 s for the "Continue?" prompt to expire | Dismiss it with Android Back (verified to cost no keys); "press Back" as a screen action | 7.4 → 4.97 s p50; time playing 25 → 40%; throughput +59% |
+| Silent stuck states | Trust template matches; recover only from unrecognized screens | Detect taps without effect (same screen after 3 taps) and escalate: popup close, then Back | Found by the soak test (1 manual intervention in 50); covered by a regression test |
 | Unwanted currency spending | Tap away the "Continue?" prompt; swipes at screen centre | No tap (prompt expires); swipes confined to the lower screen | Keys spent per run: >0 → 0 |
 
 ## Setup (Windows)
@@ -282,8 +294,10 @@ Actions: `0` no-op, `1` left, `2` right, `3` jump, `4` roll. Reward: +0.1 per st
 - **In-game currency is never spent.** The "Continue?" prompt is left to expire, and swipes are
   confined to the lower part of the screen so they cannot land on its buttons.
 
-**Known limitation:** the "Continue?" prompt appears about a second after the collision, so the
-crash penalty arrives slightly after the action that caused it.
+**Known limitation:** the "Continue?" prompt appears after the crash animation, so the crash
+penalty arrives after the action that caused it. The delay (HUD vanishing to crash screen) is now
+measured in every run as `crash_detection_delay_s`; the HUD vanishing itself is a candidate for
+earlier crash detection.
 
 ## Project layout
 
