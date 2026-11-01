@@ -98,12 +98,13 @@ def bench_e2e(backend: str, args) -> dict:
     """Input -> visible-on-screen latency via Android's pointer-location overlay."""
     from .e2e import measure
     from .screens import CALIBRATION_FILE, Calibration
+    from .vision import resolve_game_area
 
     cal_path = Path("assets") / CALIBRATION_FILE
-    area = Calibration.load("assets").game_area if cal_path.exists() else None
-    if area is None:
-        print("  (no calibration found: using the whole window, so press positions may be off)")
+    saved = Calibration.load("assets").game_area if cal_path.exists() else None
     cap = make_capture(args.e2e_capture, window=args.window, serial=args.serial)
+    area, source = resolve_game_area(cap.grab(), saved)
+    print(f"  game area: {source}")
     try:
         with open_input(backend, args.serial) as dev:
             seen = measure(dev, cap, area, args.serial, trials=args.e2e_trials)

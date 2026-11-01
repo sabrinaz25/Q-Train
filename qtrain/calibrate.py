@@ -27,7 +27,7 @@ import numpy as np
 
 from .capture import make_capture
 from .screens import CALIBRATION_FILE, Calibration, ScreenClassifier, ScreenTemplate, is_flat
-from .vision import GameArea, canonicalize
+from .vision import GameArea, canonicalize, locate_game
 
 
 @dataclass(frozen=True)
@@ -144,13 +144,19 @@ def main(argv=None) -> None:
     p.add_argument("--only", nargs="*", help="re-calibrate just these screens")
     p.add_argument("--add-popup", nargs="*", default=[], help="teach popups to dismiss, by name")
     p.add_argument("--redo-area", action="store_true", help="re-select the game area")
+    p.add_argument("--manual-area", action="store_true",
+                   help="select the game area by hand instead of auto-detecting it")
     args = p.parse_args(argv)
 
     root = Path(args.dir)
     existing = Calibration.load(root) if (root / CALIBRATION_FILE).exists() else None
     cap = make_capture("mss", window=args.window)
     try:
-        if existing and not args.redo_area:
+        found = None if args.manual_area else locate_game(cap.grab())
+        if found is not None:
+            area = found[0]
+            print(f"Found the game in the window automatically (edge score {found[1]}).")
+        elif existing and not (args.redo_area or args.manual_area):
             area = existing.game_area
             print("Using the saved game area (--redo-area to change it).")
         else:

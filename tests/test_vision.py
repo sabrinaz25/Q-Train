@@ -95,3 +95,52 @@ def test_game_area_crop_and_canonical_size():
     assert canon.shape == (CANON_H, CANON_W, 3)
     assert canon.min() == 200                                    # nothing outside the game leaked in
     assert to_obs(canon).shape == (84, 84)
+
+
+# ------------------------------------------------------------- locate_game
+FRAME_BGR = (66, 38, 35)      # BlueStacks' dark navy frame
+
+
+def emulator_window(game, left, top=82, width=1050, height=1155, panel=None, divider_gap=3):
+    """A fake BlueStacks window: navy frame, optional dark ad panel with a divider line, game inside."""
+    win = np.zeros((height, width, 3), np.uint8)
+    win[:] = FRAME_BGR
+    if panel:
+        win[:, :panel] = (31, 10, 8)
+        win[:, panel - divider_gap:panel - divider_gap + 1] = (88, 58, 55)
+    gh, gw = game.shape[:2]
+    win[top:top + gh, left:left + gw] = game
+    return win
+
+
+def game_image(w=602, h=1070, seed=0):
+    rng = np.random.default_rng(seed)
+    img = cv2.GaussianBlur(rng.integers(60, 230, (h, w, 3), dtype=np.uint8), (9, 9), 0)
+    img[:, :40] = FRAME_BGR      # a dark strip along the game's own left edge, like the real menu
+    img[::3, :40] = (200, 180, 150)
+    return img
+
+
+@pytest.mark.parametrize("layout", [{"left": 2}, {"left": 365, "panel": 365}, {"left": 200, "panel": 200}])
+def test_locate_game_finds_the_9_16_viewport(layout):
+    from qtrain.vision import locate_game
+    win = emulator_window(game_image(), **layout)
+    area, score = locate_game(win)
+    h, w = win.shape[:2]
+    assert abs(area.x * w - layout["left"]) <= 1 and abs(area.y * h - 82) <= 1
+    assert abs(area.w * w - 602) <= 2 and abs(area.h * h - 1070) <= 2
+    assert score > 0.5
+
+
+def test_locate_game_ignores_divider_next_to_the_game():
+    from qtrain.vision import locate_game
+    win = emulator_window(game_image(), left=365, panel=365, divider_gap=3)   # perfect line at x=362
+    area, _ = locate_game(win)
+    assert round(area.x * win.shape[1]) == 365
+
+
+def test_locate_game_returns_none_without_a_game():
+    from qtrain.vision import locate_game
+    win = np.zeros((600, 500, 3), np.uint8)
+    win[:] = FRAME_BGR
+    assert locate_game(win) is None

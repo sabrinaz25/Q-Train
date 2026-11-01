@@ -26,7 +26,7 @@ import cv2
 import numpy as np
 
 from .screens import Calibration, Detection, ScreenClassifier
-from .vision import CANON_H, CANON_W, canonicalize, to_obs
+from .vision import CANON_H, CANON_W, canonicalize, locate_game, to_obs
 
 ACTIONS = ("noop", "left", "right", "up", "down")   # up = jump, down = roll
 
@@ -76,8 +76,27 @@ class GameController:
         self._steps = 0
         self._tick = 0.0
         self._lost_since: float | None = None
+        self.relocate()
 
     # ------------------------------------------------------------- helpers
+    def relocate(self) -> bool:
+        """Re-find the game inside the window (e.g. after an ad panel shifts the layout).
+
+        Returns True if the area changed noticeably.
+        """
+        found = locate_game(self.cap.grab())
+        if found is None:
+            self.stats["relocate_failed"] += 1
+            return False
+        area = found[0]
+        old = self.area
+        moved = old is None or max(abs(area.x - old.x), abs(area.y - old.y),
+                                   abs(area.w - old.w), abs(area.h - old.h)) > 0.01
+        self.area = area
+        if moved:
+            self.stats["relocated"] += 1
+        return moved
+
     def to_device(self, point: tuple[int, int]) -> tuple[int, int]:
         x, y = point
         return int(x / CANON_W * self.dev.width), int(y / CANON_H * self.dev.height)
@@ -118,8 +137,10 @@ class GameController:
                 unknown += 1
                 self.stats["unknown"] += 1
                 if unknown % cfg.back_after_unknown == 0:
-                    self.dev.back()
-                    self.stats["back"] += 1
+                    # a layout change can make every screen look unknown: re-find the game first
+                    if not self.relocate():
+                        self.dev.back()
+                        self.stats["back"] += 1
                 self.sleep(cfg.poll)
                 continue
             unknown = 0

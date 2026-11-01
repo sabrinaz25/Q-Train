@@ -131,6 +131,7 @@ before and after.
 | Validity of latency numbers | Time until the command returns | Time until the touch is visible on screen | Exposed `cmd input` as a no-op that had measured 10 ms |
 | Detecting touches on screen | Pointer-overlay crosshair (under half a pixel once captured) | Overlay's coordinate readout | 0/12 → 12/12 touches detected |
 | Close-button detection | X-shape score after stretching the glyph to a square | Structural check: white centre and arms, red gaps, relative to the button | 2/5 → 6/6 real popups detected; 0 false positives on notification badges |
+| Finding the game in the window | Crop selected by hand, stored as fixed fractions of the window | Automatic detection: strongest 9:16 rectangle of edges, fourth side computed from the shape; re-run when screens go unrecognized | Survives layout changes (an ad panel shifted the game 365 px); exact to the pixel on real captures |
 | Tap placement | Screen size and orientation from `dumpsys` | Size read from a screenshot header | Taps landed off target → on target |
 | Unwanted currency spending | Tap away the "Continue?" prompt; swipes at screen centre | No tap (prompt expires); swipes confined to the lower screen | Keys spent per run: >0 → 0 |
 
@@ -229,9 +230,13 @@ Actions: `0` no-op, `1` left, `2` right, `3` jump, `4` roll. Reward: +0.1 per st
 
 ## How the environment reads the game
 
-- **Game area.** The emulator window is cropped to the game and resized to a fixed 360x640
-  canonical image. Templates and tap points are stored in canonical coordinates, so moving or
-  resizing the window does not invalidate calibration, and touches are placed by proportion.
+- **Game area.** The game is found inside the emulator window automatically: the strongest
+  rectangle of sharp edges with the game's 9:16 shape. Three sides must be clear edges and the
+  fourth is computed from the shape, which copes with game borders that fade into the frame and
+  rejects look-alike lines such as an ad panel's divider. It runs at startup and again whenever
+  screens stop being recognized, so the emulator's layout can change mid-session. The crop is
+  resized to a fixed 360x640 canonical image; templates and tap points are stored in canonical
+  coordinates, so touches are placed by proportion.
 - **Known screens.** Each calibrated screen is recognized by a small template matched near its
   calibrated position (under 1 ms per template). Each has a role (`start`, `playing`, `crash`,
   `dismiss`) that tells the controller what to do.

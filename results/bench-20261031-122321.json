@@ -1,0 +1,21 @@
+{
+  "capture": {
+    "mss": {
+      "n": 5,
+      "p50_ms": 46.75,
+      "p95_ms": 74.97,
+      "mean_ms": 50.65,
+      "per_sec": 19.7,
+      "frame_shape": [
+        1155,
+        1050,
+        3
+      ]
+    }
+  },
+  "input": {},
+  "machine": {
+    "platform": "Windows-10-10.0.26200-SP0",
+    "processor": "Intel64 Family 6 Model 186 Stepping 2, GenuineIntel"
+  }
+}

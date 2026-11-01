@@ -16,7 +16,7 @@ import cv2
 
 from .capture import make_capture
 from .screens import CALIBRATION_FILE, Calibration, ScreenClassifier
-from .vision import canonicalize, find_red_xs
+from .vision import canonicalize, find_red_xs, resolve_game_area
 
 COLORS = {"start": (255, 200, 0), "playing": (0, 220, 0), "crash": (0, 0, 255),
           "dismiss": (255, 0, 255), "unknown": (160, 160, 160)}
@@ -35,9 +35,14 @@ def main(argv=None) -> None:
     clf = ScreenClassifier(cal.templates) if cal else None
     cap = make_capture(args.capture, window=args.window)
     t_prev, fps = time.perf_counter(), 0.0
+    area, source, located_at = None, "", 0.0
     try:
         while True:
-            canon = canonicalize(cap.grab(), cal.game_area if cal else None)
+            frame = cap.grab()
+            if time.perf_counter() - located_at > 2.0:      # re-find the game every 2 s
+                area, source = resolve_game_area(frame, cal.game_area if cal else None)
+                located_at = time.perf_counter()
+            canon = canonicalize(frame, area)
             t0 = time.perf_counter()
             det = clf.classify(canon) if clf else None
             xs = find_red_xs(canon)
@@ -59,7 +64,7 @@ def main(argv=None) -> None:
             fps = 0.9 * fps + 0.1 / max(now - t_prev, 1e-6)
             t_prev = now
             lines = [f"{det.name if det else '-'} ({det.role if det else ''}) {det.score if det else 0:.2f}",
-                     f"{fps:.0f} fps, classify {ms:.1f} ms, red X: {len(xs)}"]
+                     f"{fps:.0f} fps, classify {ms:.1f} ms, red X: {len(xs)}, area: {source}"]
             lines += [f"{n}: {s:.2f}" for n, s in sorted(scores.items(), key=lambda kv: -kv[1])[:4]]
             for i, line in enumerate(lines):
                 y = 22 + 20 * i

@@ -43,6 +43,99 @@ class GameArea:
         return frame[y0:y1, x0:x1]
 
 
+GAME_ASPECT = 9 / 16  # width / height of the game's portrait viewport
+
+
+def _edge_candidates(score: np.ndarray, k: int, min_score: float) -> list[int]:
+    """Positions of the k strongest local maxima of an edge-strength profile."""
+    order = np.argsort(score)[::-1]
+    picked: list[int] = []
+    for i in order:
+        if score[i] < min_score or len(picked) >= k:
+            break
+        if all(abs(int(i) - j) > 2 for j in picked):
+            picked.append(int(i))
+    return picked
+
+
+def locate_game(frame: np.ndarray, aspect: float = GAME_ASPECT, min_height_frac: float = 0.5,
+                k: int = 12, jump: int = 25, min_side: float = 0.5) -> tuple[GameArea, float] | None:
+    """Find the game's rectangle inside the emulator window, with no calibration.
+
+    The game is drawn as a sharp-edged 9:16 rectangle inside the emulator's
+    frame, while toolbars, title bars and ad panels move around it. Steps:
+      1. Edge maps: where the colour jumps sharply between neighbouring pixels.
+      2. Candidate lines: columns/rows that are a clear edge along much of
+         their length (top, bottom, left, right borders are among them).
+      3. For each top/bottom pair and each candidate vertical edge, try it as
+         the left side and as the right side; the opposite side is *computed*
+         from the 9:16 shape (width = height x 9/16), not searched for.
+      4. Keep rectangles where at least three sides are clear edges, and
+         return the one with the strongest sides overall.
+    Computing the fourth side matters twice over: the game's own border fades
+    wherever the game is as dark as the frame (so requiring all four sides
+    fails), and a look-alike line a few pixels away, like an ad panel's
+    divider, produces a rectangle whose computed opposite side lands on
+    nothing and scores low. Returns (area, score), score = mean fraction of
+    each side that is a clear edge; None if nothing qualifies.
+    """
+    img = frame.astype(np.int16)
+    h, w = img.shape[:2]
+    # boundary b sits between pixel b-1 and b
+    v_edge = np.abs(np.diff(img, axis=1)).max(axis=2) > jump    # (h, w-1)
+    h_edge = np.abs(np.diff(img, axis=0)).max(axis=2) > jump    # (h-1, w)
+    v_cum = np.vstack([np.zeros((1, w - 1)), np.cumsum(v_edge, axis=0)])   # running count down each column
+    h_cum = np.hstack([np.zeros((h - 1, 1)), np.cumsum(h_edge, axis=1)])   # running count along each row
+
+    def v_side(b: int, top: int, bottom: int) -> float:
+        if not 1 <= b <= w - 1:
+            return 0.0
+        return (v_cum[bottom, b - 1] - v_cum[top, b - 1]) / (bottom - top)
+
+    def h_side(b: int, left: int, right: int) -> float:
+        if not 1 <= b <= h - 1:
+            return 0.0
+        return (h_cum[b - 1, right] - h_cum[b - 1, left]) / (right - left)
+
+    cols = [c + 1 for c in _edge_candidates(v_edge.mean(axis=0), k, 0.15)]
+    rows = [r + 1 for r in _edge_candidates(h_edge.mean(axis=1), k, 0.2)]
+    best: tuple[float, tuple[int, int, int, int]] | None = None
+    for top in rows:
+        for bottom in rows:
+            height = bottom - top
+            if height < min_height_frac * h:
+                continue
+            width = round(height * aspect)
+            for c in cols:
+                for left in (c, c - width):
+                    right = left + width
+                    if left < 0 or right > w:
+                        continue
+                    # the computed side may be off by a pixel of rounding: take its best position
+                    vl = v_side(left, top, bottom) if left == c else max(
+                        v_side(left + d, top, bottom) for d in (-1, 0, 1))
+                    vr = v_side(right, top, bottom) if right == c else max(
+                        v_side(right + d, top, bottom) for d in (-1, 0, 1))
+                    sides = sorted((vl, vr, h_side(top, left, right), h_side(bottom, left, right)))
+                    if sides[1] < min_side:          # the three strongest sides must be clear edges
+                        continue
+                    score = float(np.mean(sides))
+                    if best is None or score > best[0]:
+                        best = (score, (left, top, width, height))
+    if best is None:
+        return None
+    score, rect = best
+    return GameArea.from_pixels(rect, frame.shape), round(score, 3)
+
+
+def resolve_game_area(frame: np.ndarray, fallback: GameArea | None) -> tuple[GameArea | None, str]:
+    """Auto-detected game area if found, else the calibrated one. Returns (area, source)."""
+    found = locate_game(frame)
+    if found is not None:
+        return found[0], "auto"
+    return fallback, "calibration" if fallback is not None else "whole window"
+
+
 def canonicalize(frame: np.ndarray, area: GameArea | None) -> np.ndarray:
     """Crop to the game and resize to CANON_W x CANON_H (BGR)."""
     game = area.crop(frame) if area else frame

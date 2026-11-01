@@ -175,3 +175,30 @@ def test_steps_are_paced_at_fixed_rate():
         ctrl.step(0)
     assert clock.t - t0 == pytest.approx(2.0, abs=1e-6)
     assert ctrl.stats["late_ticks"] == 0
+
+
+class FakeWindowGame(FakeGame):
+    """FakeGame drawn inside an emulator-style window whose layout can shift (e.g. an ad panel appears)."""
+
+    def __init__(self, *a, left=20, **kw):
+        super().__init__(*a, **kw)
+        self.left = left
+
+    def grab(self):
+        win = np.zeros((760, 760, 3), np.uint8)
+        win[:] = (66, 38, 35)
+        win[82:82 + CANON_H, self.left:self.left + CANON_W] = SCREENS[self.screen]
+        return win
+
+
+def test_layout_shift_is_recovered_by_relocating_not_back():
+    game, clock = FakeWindowGame("menu", left=20), FakeClock()
+    ctrl = GameController(game, game, calibration(), ControllerConfig(back_after_unknown=4),
+                          clock=clock, sleep=clock.sleep)
+    assert round(ctrl.area.x * 760) == 20               # found the game at startup
+    before = ctrl.stats["relocated"]
+    game.left = 380                                      # an ad panel pushes the game right
+    _, info = ctrl.reset()
+    assert info["screens"] == ["unknown", "menu", "playing"]
+    assert ctrl.stats["relocated"] == before + 1 and game.backs == 0
+    assert round(ctrl.area.x * 760) == 380
