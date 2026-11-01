@@ -1,2 +1,0 @@
-{"episode": 1, "steps": 66, "return": 5.5, "play_seconds": 4.42, "achieved_hz": 14.9, "reset_seconds": 1.18, "screens": ["menu", "unknown", "playing"], "ended_on": "save_me", "truncated": false, "crash_delay_s": 2.135}
-{"episode": 2, "steps": 65, "return": 5.4, "play_seconds": 4.35, "achieved_hz": 15.0, "reset_seconds": 19.39, "screens": ["save_me", "game_over", "unknown", "menu", "red_x", "unknown", "menu", "red_x", "menu", "unknown", "playing"], "ended_on": "save_me", "truncated": false, "crash_delay_s": 2.068}

@@ -343,7 +343,7 @@ qtrain/
   calibrate.py     interactive calibration
   watch.py         live debug view
   run.py           episode runner with a baseline policy
-  waits.py         wait for the screen to change or settle instead of fixed sleeps
+  waits.py         wait for the screen to change or settle (used by the explorer)
   fingerprint.py   app-agnostic screen identity (edge-layout hash) and screen sets
   android.py       foreground app/activity, launching, crash and ANR log watcher
   coverage.py      driver-independent coverage observer (screens, activities, crashes)

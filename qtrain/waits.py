@@ -5,9 +5,10 @@ A fixed sleep has to cover the slowest case, so every fast transition wastes the
 difference. These helpers poll something cheap (a screen label, a fingerprint)
 and return as soon as it changes or settles, with the old sleep as the timeout.
 
-They take any `read` function and any comparison, so the same code serves the
-game controller (wait until the recognised screen changes) and the app explorer
-(wait until the screen's fingerprint changes, then stops changing).
+They take any `read` function and any comparison. The app explorer uses them to
+wait until a screen's fingerprint changes, then stops changing. (The game
+controller keeps its fixed settle sleeps: a change-based wait there returned on
+fade-out frames and caused repeated Back presses.)
 """
 from __future__ import annotations
 
