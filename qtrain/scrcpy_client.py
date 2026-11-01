@@ -413,6 +413,15 @@ class ScrcpyDevice:
         """Hold a finger down at (x, y); used by the end-to-end latency test."""
         self.tap(x, y, hold=seconds)
 
+    def swipe(self, x1: int, y1: int, x2: int, y2: int, duration_ms: int = 300) -> None:
+        """A drag from (x1, y1) to (x2, y2), e.g. to scroll a list. Blocks until done."""
+        msgs = swipe_messages(x1, y1, x2, y2, self.width, self.height, steps=10)
+        gap = duration_ms / 1000 / (len(msgs) - 1)
+        for i, m in enumerate(msgs):
+            if i:
+                time.sleep(gap)
+            self.session.send(m)
+
     def back(self) -> None:
         self.session.send(encode_key(ACTION_DOWN, KEYCODE_BACK) + encode_key(ACTION_UP, KEYCODE_BACK))
 

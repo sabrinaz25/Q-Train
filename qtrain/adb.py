@@ -243,6 +243,10 @@ class AdbDevice:
         """Android Back button (KEYCODE_BACK)."""
         self._run("keyevent 4")
 
+    def swipe(self, x1: int, y1: int, x2: int, y2: int, duration_ms: int = 300) -> None:
+        """A drag from (x1, y1) to (x2, y2), e.g. to scroll a list."""
+        self._run(f"swipe {x1} {y1} {x2} {y2} {duration_ms}")
+
     def close(self) -> None:
         if self._proc:
             try:

@@ -352,3 +352,35 @@ def test_popup_mid_run_is_dismissed_immediately():
     *_, term, trunc, info = ctrl.step(0)
     assert info["screen"] == "red_x" and not term and not trunc
     assert ctrl.stats["mid_run_dismiss"] == 1 and game.screen == "menu"   # tapped its X
+
+
+class SlowTransitionGame(FakeGame):
+    """Each tap takes effect after `delay` s of fake time, like a real screen transition."""
+
+    def __init__(self, clock, delay, *a, **kw):
+        super().__init__(*a, **kw)
+        self.clock, self.delay, self.pending = clock, delay, None
+
+    def grab(self):
+        if self.pending and self.clock.t >= self.pending[0]:
+            self.screen, self.pending = self.pending[1], None
+        return super().grab()
+
+    def tap(self, x, y):
+        before = self.screen
+        super().tap(x, y)                      # work out where the tap leads...
+        after, self.screen = self.screen, before
+        if after != before:                    # ...but show it only after the delay
+            self.pending = (self.clock.t + self.delay, after)
+
+
+def test_reset_moves_on_when_the_screen_changes_not_after_a_fixed_wait():
+    clock = FakeClock()
+    game = SlowTransitionGame(clock, 0.1, "save_me")
+    ctrl = GameController(game, game, calibration(), ControllerConfig(settle=0.8, change_poll=0.05),
+                          clock=clock, sleep=clock.sleep)
+    _, info = ctrl.reset()
+    assert info["screens"] == ["save_me", "game_over", "menu", "playing"]
+    # three transitions of 0.1 s each; fixed 0.8 s sleeps would have taken 2.4 s
+    assert info["reset_seconds"] < 0.5
+    assert ctrl.stats["transitions_fast"] == 3 and ctrl.stats["transitions_timeout"] == 0

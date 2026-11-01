@@ -27,6 +27,7 @@ import numpy as np
 
 from .screens import Calibration, Detection, ScreenClassifier
 from .vision import CANON_H, CANON_W, canonicalize, find_red_xs, locate_game, to_obs
+from .waits import wait_for_change
 
 ACTIONS = ("noop", "left", "right", "up", "down")   # up = jump, down = roll
 
@@ -55,7 +56,8 @@ class ControllerConfig:
                                      # (crash animations hide the HUD for up to ~3 s before "Continue?")
     max_steps: int | None = None
     reset_timeout: float = 90.0
-    settle: float = 0.8              # s to wait after tapping through a screen
+    settle: float = 0.8              # max s to wait for a screen to change after tapping through it
+    change_poll: float = 0.05        # s between checks while waiting for that change
     poll: float = 0.25               # s between checks while waiting
     back_after_unknown: int = 12     # press Android Back after this many unknown screens in a row
     restart_after: float = 45.0      # s into a reset that hasn't reached a run: restart the app (once)
@@ -137,6 +139,17 @@ class GameController:
         elif det.tap is not None:
             self.dev.tap(*self.to_device(det.tap))
 
+    def _await_leave(self, screen: str) -> None:
+        """After acting on `screen`, return as soon as it's gone (at most `settle` s).
+
+        Most transitions finish well before the old fixed sleep; a screen that ignores
+        the input still waits the full `settle`, so stuck-tap detection is unchanged.
+        """
+        res = wait_for_change(lambda: self.look().name, lambda name: name != screen,
+                              timeout=self.cfg.settle, poll=self.cfg.change_poll,
+                              clock=self.clock, sleep=self.sleep)
+        self.stats["transitions_fast" if res.done else "transitions_timeout"] += 1
+
     def _unstick(self, screen: str) -> None:
         """Taps on `screen` stopped working: close a popup if one is visible, else press Back."""
         self.stats["stuck"] += 1
@@ -198,7 +211,7 @@ class GameController:
             if det.key == "back":
                 self.dev.back()
                 self.stats[f"back:{det.name}"] += 1
-                self.sleep(cfg.settle)
+                self._await_leave(det.name)
             elif det.tap is not None:
                 if det.name != last_tapped:
                     last_tapped, same_taps, first_tap_at = det.name, 0, self.clock()
@@ -215,7 +228,7 @@ class GameController:
                     continue
                 self.dev.tap(*self.to_device(det.tap))
                 self.stats[f"tap:{det.name}"] += 1
-                self.sleep(cfg.settle)
+                self._await_leave(det.name)
             else:                       # recognised screen with nothing to tap: let it time out
                 self.sleep(cfg.poll)
 

@@ -60,7 +60,7 @@ Each milestone is defined by the numbers it must produce.
 | 1 | Low-latency I/O | Complete | End-to-end input latency 69 ms p50; capture 60 fps |
 | 2 | Hands-free control | Complete | 15 Hz control rate; automatic resets and popup handling |
 | 3 | Reliability | Complete | 100/100 episodes unattended; reset 7.4 → 4.2 s p50; throughput +57% |
-| 4 | App explorer | Next | Unique screens reached per hour vs. Android's `monkey` tester; crashes found |
+| 4 | App explorer | In progress | Unique screens reached per hour vs. Android's `monkey` tester; crashes found |
 | 5 | Parallel workers | Planned | Throughput vs. number of instances; recovery time after injected faults |
 | 6 | Observability | Planned | Per-stage latency breakdown (capture, recognition, decision, touch), p50/p95 |
 
@@ -272,6 +272,20 @@ python -m qtrain.run --serial 127.0.0.1:5556 --window "BlueStacks App Player 1" 
 Plays complete episodes with a random policy (reset, play, crash, reset) without user input,
 and records steps per episode, reset time, achieved control rate and time spent playing.
 
+### App explorer vs. Android's monkey
+
+```powershell
+python -m qtrain.compare --serial 127.0.0.1:5556 --list-packages
+python -m qtrain.compare --serial 127.0.0.1:5556 --package <app.package> --minutes 10
+```
+
+Runs the pixel explorer and Android's `monkey` on the same app with the same time budget and the
+same starting state, and measures both with one observer: unique screens (pixel fingerprints that
+stayed up for a full sample), unique activities (from Android), and crashes/ANRs (from the
+device's event log). The explorer needs no setup per app: it finds tappable elements from pixels,
+never retries a tap that did nothing, and walks its screen graph back to screens with untried
+elements. Monkey sends system events too, so use an instance you don't mind being poked at.
+
 ### Python API
 
 ```python
@@ -329,7 +343,13 @@ qtrain/
   calibrate.py     interactive calibration
   watch.py         live debug view
   run.py           episode runner with a baseline policy
-tests/             unit tests, including a scripted fake game (CI on Ubuntu and Windows)
+  waits.py         wait for the screen to change or settle instead of fixed sleeps
+  fingerprint.py   app-agnostic screen identity (edge-layout hash) and screen sets
+  android.py       foreground app/activity, launching, crash and ANR log watcher
+  coverage.py      driver-independent coverage observer (screens, activities, crashes)
+  explorer.py      pixel-based app explorer
+  compare.py       explorer vs. monkey benchmark CLI
+tests/             unit tests with a scripted fake game and fake app (CI on Ubuntu and Windows)
 results/           benchmark and run outputs
 ```
 
